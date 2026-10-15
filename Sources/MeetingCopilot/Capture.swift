@@ -4,8 +4,8 @@ import CoreMedia
 import ScreenCaptureKit
 
 enum CaptureError: LocalizedError {
-    case noDisplay
-    var errorDescription: String? { "未找到可捕获的显示器" }
+    case noDisplay, noMic
+    var errorDescription: String? { self == .noMic ? "未找到可用的麦克风" : "未找到可捕获的显示器" }
 }
 
 /// 只读地捕获系统音频（会议里对方的声音）。不修改、不注入任何内容。
@@ -66,21 +66,38 @@ final class SystemAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate {
     }
 }
 
-/// 麦克风（你自己的发言）
-final class MicCapture {
-    private let engine = AVAudioEngine()
+/// 麦克风（你自己的发言）。
+/// 用 AVCaptureSession 而不是 AVAudioEngine：AVAudioEngine 在 macOS 上会创建“默认输入输出聚合设备”
+/// （CADefaultDeviceAggregate），可能干扰其他应用使用麦克风；AVCaptureSession 只是一个普通的共享输入客户端。
+/// 只在“开始监听”时才创建，空闲时完全不碰音频设备。
+final class MicCapture: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
+    private var session: AVCaptureSession?
+    private var handler: ((AVAudioPCMBuffer) -> Void)?
+    private let queue = DispatchQueue(label: "mc.mic")
 
     func start(handler: @escaping (AVAudioPCMBuffer) -> Void) throws {
-        let input = engine.inputNode
-        input.installTap(onBus: 0, bufferSize: 2048, format: input.outputFormat(forBus: 0)) { buf, _ in
-            handler(buf)
-        }
-        try engine.start()
+        guard let dev = AVCaptureDevice.default(for: .audio) else { throw CaptureError.noMic }
+        let s = AVCaptureSession()
+        let input = try AVCaptureDeviceInput(device: dev)
+        let out = AVCaptureAudioDataOutput()
+        guard s.canAddInput(input), s.canAddOutput(out) else { throw CaptureError.noMic }
+        s.addInput(input)
+        out.setSampleBufferDelegate(self, queue: queue)
+        s.addOutput(out)
+        self.handler = handler
+        s.startRunning()
+        session = s
     }
 
     func stop() {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        session?.stopRunning()
+        session = nil
+        handler = nil
+    }
+
+    func captureOutput(_ output: AVCaptureOutput, didOutput sb: CMSampleBuffer, from connection: AVCaptureConnection) {
+        guard sb.isValid, let buf = SystemAudioCapture.pcm(from: sb) else { return }
+        handler?(buf)
     }
 }
 

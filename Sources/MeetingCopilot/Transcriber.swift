@@ -7,6 +7,8 @@ struct SegmentUpdate {
     let start: Date
     let text: String
     let isFinal: Bool
+    /// 这段话实际说完的时刻（定稿时已扣除末尾静音），用于判断对方是否已经说完
+    var end = Date()
 }
 
 /// 本地 Whisper 引擎（WhisperKit / CoreML）。多语言，自动检测语言，支持中英混杂；音频不出本机。
@@ -220,19 +222,20 @@ final class WhisperStream {
 
     private func finalize() {
         let id = segID, start = segStart, samples = seg
+        let end = Date().addingTimeInterval(-silence)
         let worthIt = speechSecs >= minSpeech
         seg = []; inSpeech = false; silence = 0; speechSecs = 0
         guard worthIt else {
-            onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true)); return
+            onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true, end: end)); return
         }
         Task {
             do {
                 let text = try await WhisperEngine.shared.transcribe(samples)
-                q.async { self.onUpdate?(SegmentUpdate(id: id, start: start, text: text, isFinal: true)) }
+                q.async { self.onUpdate?(SegmentUpdate(id: id, start: start, text: text, isFinal: true, end: end)) }
             } catch {
                 q.async {
                     self.onError?("识别失败：\(error.localizedDescription)")
-                    self.onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true))
+                    self.onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true, end: end))
                 }
             }
         }

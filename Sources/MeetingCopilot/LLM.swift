@@ -24,12 +24,14 @@ enum LLM {
     /// 流式调用大模型，逐段返回文本。只发出一个 HTTPS 请求，不执行任何返回内容。
     static func stream(settings: Settings, apiKey: String, system: String,
                        user: String, imageJPEG: Data?,
-                       history: [ChatTurn] = [], systemTail: String = "") -> AsyncThrowingStream<String, Error> {
+                       history: [ChatTurn] = [], systemTail: String = "",
+                       userBlocks: [String]? = nil, cacheBlock: Int? = nil) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { cont in
             let task = Task {
                 do {
                     let req = try makeRequest(settings: settings, apiKey: apiKey,
-                                              system: system, tail: systemTail, user: user, image: imageJPEG, history: history)
+                                              system: system, tail: systemTail, user: user, image: imageJPEG, history: history,
+                                              blocks: userBlocks, cacheBlock: cacheBlock)
                     let (bytes, resp) = try await URLSession.shared.bytes(for: req)
                     guard let http = resp as? HTTPURLResponse else { throw LLMError.http(0, "无响应") }
                     if !(200..<300).contains(http.statusCode) {
@@ -61,7 +63,8 @@ enum LLM {
     }
 
     private static func makeRequest(settings: Settings, apiKey: String, system: String, tail: String,
-                                    user: String, image: Data?, history: [ChatTurn]) throws -> URLRequest {
+                                    user: String, image: Data?, history: [ChatTurn],
+                                    blocks: [String]?, cacheBlock: Int?) throws -> URLRequest {
         let base = try validate(settings.baseURL)
         var req: URLRequest
         var body: [String: Any]
@@ -72,9 +75,9 @@ enum LLM {
             req = URLRequest(url: base.appendingPathComponent("chat/completions"))
             if !apiKey.isEmpty { req.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization") }
             // 无图时用纯字符串 content（DeepSeek 等纯文本模型只认这种格式）
-            var content: Any = user
+            var content: Any = blocks?.joined(separator: "\n\n") ?? user
             if let b64 {
-                content = [["type": "text", "text": user],
+                content = [["type": "text", "text": blocks?.joined(separator: "\n\n") ?? user],
                            ["type": "image_url", "image_url": ["url": "data:image/jpeg;base64,\(b64)"]]] as [[String: Any]]
             }
             var msgs: [[String: Any]] = [["role": "system", "content": tail.isEmpty ? system : system + "\n\n" + tail]]
@@ -89,10 +92,15 @@ enum LLM {
             req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
             req.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
             var parts: [[String: Any]] = []
+            // 文本块在前、截图在最后：保证请求前缀（系统提示词 + 整场对话）逐次保持不变，便于缓存命中
+            for (i, t) in (blocks ?? [user]).enumerated() {
+                var part: [String: Any] = ["type": "text", "text": t]
+                if i == cacheBlock { part["cache_control"] = ["type": "ephemeral"] }
+                parts.append(part)
+            }
             if let b64 {
                 parts.append(["type": "image", "source": ["type": "base64", "media_type": "image/jpeg", "data": b64]])
             }
-            parts.append(["type": "text", "text": user])
             var msgs: [[String: Any]] = []
             for t in history {
                 msgs.append(["role": "user", "content": t.user])
