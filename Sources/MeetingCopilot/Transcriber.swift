@@ -1,0 +1,224 @@
+import AVFoundation
+import WhisperKit
+
+/// 一次转写产生的更新。同一段话的 partial/final 共用 id；start 用于跨来源排序。
+struct SegmentUpdate {
+    let id: Int
+    let start: Date
+    let text: String
+    let isFinal: Bool
+}
+
+/// 本地 Whisper 引擎（WhisperKit / CoreML）。多语言，自动检测语言，支持中英混杂；音频不出本机。
+/// 两路音频共用一个模型，调用在 actor 内串行。
+actor WhisperEngine {
+    static let shared = WhisperEngine()
+    private var kit: WhisperKit?
+    private var loadedModel: String?
+    private var language: String?   // nil = 自动检测
+
+    struct EngineError: LocalizedError { let errorDescription: String? }
+
+    func setLanguage(_ l: String?) { language = l }
+    var isLoaded: Bool { kit != nil }
+
+    func load(model: String, onStatus: @escaping @Sendable (String) -> Void) async throws {
+        if kit != nil && loadedModel == model { return }
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("MeetingCopilot/models", isDirectory: true)
+        try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
+        onStatus("下载识别模型 \(model)…（首次需要，请保持联网）")
+        let folder = try await WhisperKit.download(variant: model, downloadBase: base) { p in
+            onStatus("下载识别模型 \(Int(p.fractionCompleted * 100))%")
+        }
+        onStatus("加载识别模型…（首次约需 1–2 分钟优化）")
+        kit = try await WhisperKit(WhisperKitConfig(model: model, downloadBase: base, modelFolder: folder.path,
+                                                    verbose: false, logLevel: .error,
+                                                    prewarm: true, load: true, download: false))
+        loadedModel = model
+    }
+
+    func transcribe(_ samples: [Float]) async throws -> String {
+        guard let kit else { throw EngineError(errorDescription: "识别模型尚未加载") }
+        // 自动模式只在中文/英文之间选择：避免噪声（键盘声等）被检测成日语、僧伽罗语等并产生乱码
+        var lang = language
+        if lang == nil {
+            let (top, probs) = try await kit.detectLangauge(audioArray: samples)
+            let z = probs["zh"] ?? -Float.infinity, e = probs["en"] ?? -Float.infinity
+            if top != "zh", top != "en", (probs[top] ?? 0) > 0.6, probs.values.allSatisfy({ $0 >= 0 && $0 <= 1 }) {
+                return "" // 非中英文且很确定 → 当作噪声
+            }
+            lang = z > e ? "zh" : "en"
+        }
+        var o = DecodingOptions()
+        o.task = .transcribe
+        o.language = lang
+        o.detectLanguage = false
+        o.temperature = 0
+        o.skipSpecialTokens = true
+        o.withoutTimestamps = true
+        o.noSpeechThreshold = 0.6
+        o.compressionRatioThreshold = 2.4
+        let r: [TranscriptionResult] = try await kit.transcribe(audioArray: samples, decodeOptions: o)
+        var text = r.map(\.text).joined(separator: " ").trimmingCharacters(in: .whitespacesAndNewlines)
+        if lang == "zh" {
+            // Whisper 的中文输出常带繁体，统一转为简体
+            text = text.applyingTransform(StringTransform("Hant-Hans"), reverse: false) ?? text
+        }
+        return Self.clean(text)
+    }
+
+    /// 过滤 Whisper 在非语音声音上的“幻觉”：(keyboard clacking)、[tapping]、(laughs)、Thank you. 等
+    static func clean(_ t: String) -> String {
+        var s = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 去掉括号里的音效标注
+        s = s.replacingOccurrences(of: "[\\(\\[（【][^\\)\\]）】]*[\\)\\]）】]", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let lower = s.lowercased().trimmingCharacters(in: CharacterSet.punctuationCharacters.union(.whitespaces))
+        let phantoms: Set<String> = ["thank you", "thanks", "thanks for watching", "thank you for watching", "bye", "you",
+                                     "谢谢", "谢谢观看", "谢谢大家", "字幕由amara.org社区提供"]
+        if phantoms.contains(lower) { return "" }
+        // 没有任何字母/汉字（只剩标点）
+        if s.unicodeScalars.allSatisfy({ !CharacterSet.letters.contains($0) }) { return "" }
+        return s
+    }
+}
+
+/// 把任意格式的 PCM 转成 16kHz 单声道 Float
+final class Resampler {
+    private static let out = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
+    private var conv: AVAudioConverter?
+    private var inFmt: AVAudioFormat?
+
+    func samples(_ b: AVAudioPCMBuffer) -> [Float] {
+        if b.format.sampleRate == 16000, b.format.channelCount == 1, let d = b.floatChannelData {
+            return Array(UnsafeBufferPointer(start: d[0], count: Int(b.frameLength)))
+        }
+        if conv == nil || inFmt != b.format {
+            conv = AVAudioConverter(from: b.format, to: Self.out); inFmt = b.format
+        }
+        let cap = AVAudioFrameCount(Double(b.frameLength) * 16000 / b.format.sampleRate) + 32
+        guard let conv, let ob = AVAudioPCMBuffer(pcmFormat: Self.out, frameCapacity: cap) else { return [] }
+        var given = false
+        var err: NSError?
+        conv.convert(to: ob, error: &err) { _, st in
+            if given { st.pointee = .noDataNow; return nil }
+            given = true; st.pointee = .haveData; return b
+        }
+        guard err == nil, let d = ob.floatChannelData else { return [] }
+        return Array(UnsafeBufferPointer(start: d[0], count: Int(ob.frameLength)))
+    }
+}
+
+/// 一路音频的流式转写：能量 VAD 切句 → 说话中每 2 秒出一次临时结果 → 停顿 0.8 秒后出定稿。
+final class WhisperStream {
+    let speaker: String
+    var onUpdate: ((SegmentUpdate) -> Void)?
+    var onError: ((String) -> Void)?
+
+    private let q: DispatchQueue
+    private let resampler = Resampler()
+    private var running = false
+    private var seg: [Float] = []
+    private var pre: [Float] = []
+    private var inSpeech = false
+    private var silence = 0.0
+    private var speechSecs = 0.0
+    private var segID = 0
+    private var segStart = Date()
+    private var lastPartial = Date()
+    private var partialBusy = false
+
+    private let rate = 16000
+    private let voiceThreshold: Float
+    private let minSpeech: Double
+
+    /// 麦克风底噪/键盘声更多，阈值更高；系统音频较干净
+    init(speaker: String, voiceThreshold: Float = 0.008, minSpeech: Double = 0.3) {
+        self.speaker = speaker
+        self.voiceThreshold = voiceThreshold
+        self.minSpeech = minSpeech
+        q = DispatchQueue(label: "mc.whisper.\(speaker)")
+    }
+
+    func start() { q.async { self.running = true } }
+
+    func stop() {
+        q.async {
+            if self.inSpeech { self.finalize() }
+            self.running = false
+        }
+    }
+
+    func append(_ buf: AVAudioPCMBuffer) {
+        let s = resampler.samples(buf)
+        guard !s.isEmpty else { return }
+        q.async { self.feed(s) }
+    }
+
+    private func feed(_ s: [Float]) {
+        guard running else { return }
+        let dur = Double(s.count) / Double(rate)
+        var sum: Float = 0
+        for v in s { sum += v * v }
+        let voiced = (sum / Float(s.count)).squareRoot() > voiceThreshold
+
+        if voiced {
+            if !inSpeech {
+                inSpeech = true; seg = pre; pre = []
+                segID += 1; segStart = Date(); lastPartial = Date()
+            }
+            seg += s; silence = 0; speechSecs += dur
+        } else if inSpeech {
+            seg += s; silence += dur
+            if silence >= 0.8 { finalize(); return }
+        } else {
+            pre += s
+            if pre.count > rate * 3 / 10 { pre.removeFirst(pre.count - rate * 3 / 10) }
+        }
+        guard inSpeech else { return }
+        if seg.count >= rate * 25 { finalize(); return }
+        if !partialBusy, seg.count >= rate, Date().timeIntervalSince(lastPartial) > 2 { partial() }
+    }
+
+    private func partial() {
+        partialBusy = true
+        let id = segID, start = segStart, snapshot = seg
+        Task {
+            let text = try? await WhisperEngine.shared.transcribe(snapshot)
+            q.async {
+                self.partialBusy = false
+                self.lastPartial = Date()
+                if let text, !text.isEmpty, self.running {
+                    self.onUpdate?(SegmentUpdate(id: id, start: start, text: text, isFinal: false))
+                }
+            }
+        }
+    }
+
+    private func finalize() {
+        let id = segID, start = segStart, samples = seg
+        let worthIt = speechSecs >= minSpeech
+        seg = []; inSpeech = false; silence = 0; speechSecs = 0
+        guard worthIt else {
+            onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true)); return
+        }
+        Task {
+            do {
+                let text = try await WhisperEngine.shared.transcribe(samples)
+                q.async { self.onUpdate?(SegmentUpdate(id: id, start: start, text: text, isFinal: true)) }
+            } catch {
+                q.async {
+                    self.onError?("识别失败：\(error.localizedDescription)")
+                    self.onUpdate?(SegmentUpdate(id: id, start: start, text: "", isFinal: true))
+                }
+            }
+        }
+    }
+}
+
+enum Permissions {
+    static func microphone() async -> Bool {
+        await AVCaptureDevice.requestAccess(for: .audio)
+    }
+}
