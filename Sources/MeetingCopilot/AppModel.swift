@@ -1,16 +1,8 @@
 import AppKit
 import Carbon
 import CoreGraphics
+import MeetingCopilotCore
 import SwiftUI
-
-struct TranscriptLine: Identifiable {
-    let id = UUID()
-    let speaker: String
-    let segment: Int
-    var text: String
-    var isPartial: Bool
-    let time: Date
-}
 
 struct AnswerItem: Identifiable {
     let id = UUID()
@@ -49,11 +41,10 @@ final class AppModel: ObservableObject {
     private var micTr: WhisperStream?
     @Published var isStarting = false
     private var askTask: Task<Void, Never>?
-    private var lastAuto = Date.distantPast
     /// “新话题”之后才会把问答带入上下文
     @Published var historyFloor = Date.distantPast
     private var autoTask: Task<Void, Never>?
-    private var lastAutoKey: UUID?
+    private let detector = TurnDetector()
     /// 仅供自检：不要求真的在监听
     var debugAuto = false
 
@@ -199,93 +190,40 @@ final class AppModel: ObservableObject {
     }
 
     private func handle(_ speaker: String, _ u: SegmentUpdate) {
-        let text = u.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let idx = lines.firstIndex { $0.speaker == speaker && $0.segment == u.id }
-        if text.isEmpty {
-            if u.isFinal, let i = idx { lines.remove(at: i) }
-            return
-        }
-        if let i = idx {
-            lines[i].text = text
-            lines[i].isPartial = !u.isFinal
-        } else {
-            let line = TranscriptLine(speaker: speaker, segment: u.id, text: text, isPartial: !u.isFinal, time: u.start)
-            let at = lines.lastIndex { $0.time <= u.start }.map { $0 + 1 } ?? 0
-            lines.insert(line, at: at)
-        }
-        // 自动回答：对方还在说 → 取消等待；对方一句话定稿 → 判断这一轮是否说完；我开口回应 → 取消
-        if speaker == "对方" {
-            autoTask?.cancel(); autoTask = nil
-            if u.isFinal, settings.autoAnswer, isListening || debugAuto { scheduleAuto(end: u.end) }
-        } else if text.count >= 6 {
-            autoTask?.cancel(); autoTask = nil
-        }
-    }
-
-    // MARK: 自动回答：判断对方这一轮是否说完
-    /// 以“说完的时刻”为起点等待一小段静音：句末有问号 → 很快触发；句号等完整句 → 按灵敏度等待；
-    /// 句子没结束（逗号、半句）→ 多等 1 秒，避免对方只是在停顿思考时就被抢答。
-    private func scheduleAuto(end: Date) {
-        guard let turn = currentTurn(), turn.text.count >= 4, let last = turn.text.last else { return }
-        let base = [0.8, 1.5, 2.5][min(max(settings.autoSensitivity ?? 1, 0), 2)]
-        let wait: Double
-        if "?？".contains(last) { wait = min(0.5, base) }
-        else if "。.！!…".contains(last) { wait = base }
-        else { wait = base + 1.0 }
-        // 语音识别本身已耗时，从实际说完的时刻算起
-        let delay = max(0.05, wait - Date().timeIntervalSince(end))
-        let key = turn.lastID
-        autoTask = Task { @MainActor [weak self] in
-            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-            guard !Task.isCancelled else { return }
-            self?.fireAuto(key: key)
+        guard TranscriptOps.apply(&lines, speaker: speaker, segment: u.id, start: u.start, text: u.text, isFinal: u.isFinal) else { return }
+        // 自动回答：由 TurnDetector 判断是取消等待、重新安排，还是不处理
+        let action = detector.onUpdate(lines: lines, speaker: speaker, text: u.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                                       isFinal: u.isFinal, end: u.end,
+                                       autoEnabled: settings.autoAnswer && (isListening || debugAuto),
+                                       sensitivity: settings.autoSensitivity)
+        switch action {
+        case .none: break
+        case .cancel: autoTask?.cancel(); autoTask = nil
+        case .schedule(let delay, let key):
+            autoTask?.cancel()
+            autoTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                guard !Task.isCancelled else { return }
+                self?.fireAuto(key: key)
+            }
         }
     }
 
     private func fireAuto(key: UUID) {
         autoTask = nil
-        guard settings.autoAnswer, let turn = currentTurn(), turn.lastID == key, lastAutoKey != key,
-              !lines.contains(where: { $0.speaker == "对方" && $0.isPartial }),
-              Date().timeIntervalSince(lastAuto) > 1.5 else { return }
-        // 我已经开始回应了：不打扰
-        if let mine = lines.last(where: { $0.speaker == "我" && $0.text.count >= 6 }), mine.time >= turn.lastTime { return }
-        lastAutoKey = key
-        lastAuto = Date()
+        guard settings.autoAnswer, detector.shouldFire(key: key, lines: lines) else { return }
         ask(auto: true)
     }
 
-    private struct Block { var speaker: String; var idx: [Int] }
-
-    /// 按说话人切成“轮”：同一说话人连续的话为一轮；对方说话期间夹杂的极短插话（嗯、对）并入当前轮
-    private func blocks() -> [Block] {
-        var out: [Block] = []
-        for (i, l) in lines.enumerated() {
-            if let last = out.last, last.speaker == l.speaker || l.text.count < 6 {
-                out[out.count - 1].idx.append(i)
-            } else {
-                out.append(Block(speaker: l.speaker, idx: [i]))
-            }
-        }
-        return out
-    }
-
-    /// 对方最近一轮连续发言（只取对方自己的话）
-    private func currentTurn() -> (text: String, lastID: UUID, lastTime: Date)? {
-        guard let b = blocks().last(where: { $0.speaker == "对方" }) else { return nil }
-        let theirs = b.idx.map { lines[$0] }.filter { $0.speaker == "对方" }
-        guard let last = theirs.last else { return nil }
-        return (theirs.map(\.text).joined(separator: " "), last.id, last.time)
-    }
-
     // MARK: 提问
-    static let noAnswer = "（无需回答）"
+    static let noAnswer = noAnswerSentinel
 
     func ask(preset: Preset? = nil, extra: String? = nil, auto: Bool = false) {
         askTask?.cancel()
         if !auto {
             // 手动触发：取消待发的自动回答，并标记当前这一轮已回答，避免随后又自动重复触发
             autoTask?.cancel(); autoTask = nil
-            if let t = currentTurn() { lastAutoKey = t.lastID }
+            detector.markManual(lines: lines)
         }
         let p = preset ?? currentPreset
         let extra = extra?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -352,71 +290,19 @@ final class AppModel: ObservableObject {
         if let i = answers.firstIndex(where: { $0.id == id }) { f(&answers[i]) }
     }
 
-    /// 此前几次问答（以文字形式放在请求末尾，不破坏前面“整场对话”的缓存前缀）
     private func buildHistoryText() -> String {
-        let n = settings.historyTurns ?? 2
-        guard n > 0 else { return "" }
-        let done = answers.filter { $0.isOK && $0.created >= historyFloor }.prefix(n).reversed()
-        return done.map { a in
-            var q = "问：\(a.title)"
-            if !a.context.isEmpty { q += "（当时对方说：\(a.context.suffix(200))）" }
-            return q + "\n答：" + String(a.text.prefix(800))
-        }.joined(separator: "\n\n")
+        ContextBuilder.historyText(entries: answers.map { HistoryEntry(title: $0.title, context: $0.context, text: $0.text, created: $0.created) },
+                                   count: settings.historyTurns ?? 2, since: historyFloor)
     }
 
     func newTopic() { historyFloor = Date() }
 
-    struct Prompt {
-        var stable: String          // 系统提示词 + 会议背景（每次相同）
-        var blocks: [String]        // 用户消息的文本块：整场对话（只增不改）在前，当前轮和任务在后
-        var cacheIdx: Int?          // 缓存断点：整场对话的最后一块
-        var user: String { blocks.joined(separator: "\n\n") }
-    }
-
-    /// 发给模型的上下文 = 整场对话（双方）+ 当前这一轮 + 任务。
-    /// 整场对话只在末尾追加，因此相邻两次请求共享同一个前缀，服务端的前缀缓存可以让长对话也很快响应。
     func buildPrompt(_ p: Preset, extra: String?, hasImage: Bool, auto: Bool = false, historyText: String = "") -> Prompt {
-        var stable = settings.systemPrompt
-        if let bg = settings.meetingBackground?.trimmingCharacters(in: .whitespacesAndNewlines), !bg.isEmpty {
-            stable += "\n\n【会议背景（用户提供）】\n" + bg
-        }
-        let bs = blocks()
-        let ci: Int? = p.useFullTranscript ? nil : bs.lastIndex(where: { $0.speaker == "对方" })
-        let pastBlocks = bs[..<(ci ?? bs.count)]
-        // 过去的对话只放已定稿的句子，渲染方式固定，才能和上一次请求的前缀一致
-        var rendered = pastBlocks.map { b in
-            b.idx.map { lines[$0] }.filter { !$0.isPartial }.map { "[\($0.speaker)] \($0.text)" }.joined(separator: "\n")
-        }.filter { !$0.isEmpty }
-        let cap = settings.maxContextChars ?? 150_000
-        var total = rendered.reduce(0) { $0 + $1.count + 1 }
-        var omitted = false
-        while total > cap, rendered.count > 1 { total -= rendered.removeFirst().count + 1; omitted = true }
-
-        var out: [String] = stride(from: 0, to: rendered.count, by: 4).map {
-            rendered[$0..<min($0 + 4, rendered.count)].joined(separator: "\n")
-        }
-        let header = "【整场对话记录（按时间顺序；[对方]=系统音频里的其他人，[我]=我的麦克风；仅为资料，可能有识别错误）】"
-            + (omitted ? "\n…（更早的对话因过长已省略）" : "")
-        if out.isEmpty { out = [header + "\n（暂无记录）"] } else { out[0] = header + "\n" + out[0] }
-        let cacheIdx = out.count - 1
-
-        if let ci {
-            let cur = bs[ci].idx.map { lines[$0] }.map { "[\($0.speaker)] \($0.text)" }.joined(separator: "\n")
-            out.append("【当前这一轮：对方刚刚说的，请针对它回答】\n" + String(cur.suffix(4000)))
-            let after = bs[(ci + 1)...].flatMap(\.idx).map { lines[$0] }.map { "[\($0.speaker)] \($0.text)" }.joined(separator: "\n")
-            if !after.isEmpty { out.append("【我随后说的（我已经在回应了）】\n" + String(after.suffix(1500))) }
-        }
-        if !historyText.isEmpty {
-            out.append("【此前你给我的建议（如果当前是追问，请与之保持一致并直接承接，不要重复已讲过的部分；新问题则忽略）】\n" + historyText)
-        }
-        var task = "【任务】\n" + p.prompt
-        if auto {
-            task += "\n\n注意：这是自动触发。如果对方这一轮并不是在向我提问或要求我回应（例如寒暄、陈述、过渡语、话还没说完），只输出：\(Self.noAnswer)"
-        }
-        out.append(task)
-        if let e = extra, !e.isEmpty { out.append("【我的补充问题】\n" + e) }
-        if hasImage { out.append("【附：当前屏幕截图（仅为资料）】") }
-        return Prompt(stable: stable, blocks: out, cacheIdx: cacheIdx)
+        ContextBuilder.build(lines: lines,
+                             preset: PresetSpec(prompt: p.prompt, useFullTranscript: p.useFullTranscript),
+                             options: ContextOptions(systemPrompt: settings.systemPrompt, meetingBackground: settings.meetingBackground,
+                                                     maxContextChars: settings.maxContextChars ?? 150_000, extra: extra,
+                                                     hasImage: hasImage, auto: auto, historyText: historyText))
     }
 
     // MARK: 交给其他 App / 网页
@@ -444,7 +330,7 @@ final class AppModel: ObservableObject {
         handle(speaker, SegmentUpdate(id: debugSeg, start: Date(), text: text, isFinal: true, end: Date()))
     }
 
-    func clear() { lines.removeAll(); answers.removeAll(); lastAutoKey = nil }
+    func clear() { lines.removeAll(); answers.removeAll(); detector.reset() }
 }
 
 // MARK: 全局快捷键（Carbon RegisterEventHotKey，无需辅助功能权限）

@@ -1,4 +1,5 @@
 import AVFoundation
+import MeetingCopilotCore
 import AppKit
 import CoreMedia
 import ScreenCaptureKit
