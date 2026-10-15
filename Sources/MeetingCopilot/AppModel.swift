@@ -70,7 +70,7 @@ final class AppModel: ObservableObject {
         NotificationCenter.default.addObserver(forName: .hotkeyAsk, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.flash("快捷键已触发，正在回答…"); self?.ask() }
         }
-        applyHotkey()
+        if !RuntimeFlags.isolated { applyHotkey() }
     }
 
     // MARK: 手动回答全局快捷键

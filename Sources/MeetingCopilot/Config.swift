@@ -1,6 +1,12 @@
 import Foundation
 import Security
 
+/// 自检（--selftest-*）运行时置为 true：不写设置文件、不读写钥匙串、不注册全局快捷键，
+/// 避免自检污染用户的真实设置（曾因自检把 Base URL/模型改成 mock 并保存）。
+enum RuntimeFlags {
+    nonisolated(unsafe) static var isolated = CommandLine.arguments.contains { $0.hasPrefix("--selftest") }
+}
+
 enum Provider: String, Codable, CaseIterable, Identifiable {
     case openai, anthropic
     var id: String { rawValue }
@@ -156,6 +162,7 @@ struct Settings: Codable {
     }
 
     func save() {
+        guard !RuntimeFlags.isolated else { return }
         if let data = try? JSONEncoder().encode(self) {
             try? data.write(to: Settings.fileURL, options: [.atomic, .completeFileProtection])
         }
@@ -167,6 +174,7 @@ enum Keychain {
     private static let service = "com.meetingcopilot.MeetingCopilot"
 
     static func get(_ account: String) -> String {
+        guard !RuntimeFlags.isolated else { return "" }
         let q: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                 kSecAttrService as String: service,
                                 kSecAttrAccount as String: account,
@@ -179,6 +187,7 @@ enum Keychain {
     }
 
     static func set(_ value: String, account: String) {
+        guard !RuntimeFlags.isolated else { return }
         let base: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
                                    kSecAttrService as String: service,
                                    kSecAttrAccount as String: account]
