@@ -1,0 +1,257 @@
+{
+ "think_pause_01": {
+  "audio": {
+   "noise": true,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "我们先来看看你的项目，嗯……我想问的是",
+    "start": 1.0,
+    "end": 4.812,
+    "kind": "speech"
+   },
+   {
+    "speaker": "对方",
+    "text": "你在这个项目里遇到的最大技术挑战是什么？",
+    "start": 6.812,
+    "end": 10.672,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，这个问题我来说一下，主要有几个方面。",
+    "start": 13.172,
+    "end": 17.245,
+    "kind": "speech"
+   }
+  ]
+ },
+ "multi_question_01": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "你们团队有多少人？",
+    "start": 1.0,
+    "end": 2.747,
+    "kind": "speech"
+   },
+   {
+    "speaker": "对方",
+    "text": "另外你们的迭代周期是怎样的？",
+    "start": 3.747,
+    "end": 6.33,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我一个一个来回答。",
+    "start": 8.83,
+    "end": 10.836,
+    "kind": "speech"
+   }
+  ]
+ },
+ "imperative_01": {
+  "audio": {
+   "noise": true,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "讲讲你的项目。",
+    "start": 1.0,
+    "end": 2.259,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我先从整体说起。",
+    "start": 4.759,
+    "end": 7.009,
+    "kind": "speech"
+   }
+  ]
+ },
+ "imperative_04": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "Walk me through your resume.",
+    "start": 1.0,
+    "end": 2.395,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "Sure, let me start from the big picture.",
+    "start": 4.895,
+    "end": 7.08,
+    "kind": "speech"
+   }
+  ]
+ },
+ "me_interrupt_01": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "你能介绍一下这个项目的整体架构吗？",
+    "start": 1.0,
+    "end": 4.222,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，这个项目整体分为接入层、服务层和数据层三层。",
+    "start": 4.422,
+    "end": 9.702,
+    "kind": "speech"
+   }
+  ]
+ },
+ "backchannel_01": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "我想了解一下，你在这个项目里",
+    "start": 1.0,
+    "end": 4.022,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "嗯",
+    "start": 4.622,
+    "end": 4.861,
+    "kind": "speech"
+   },
+   {
+    "speaker": "对方",
+    "text": "具体负责的是哪一个模块？",
+    "start": 5.422,
+    "end": 7.693,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我来回答这个问题。",
+    "start": 10.193,
+    "end": 12.455,
+    "kind": "speech"
+   }
+  ]
+ },
+ "echo_01": {
+  "audio": {
+   "noise": false,
+   "echo": true
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "你能介绍一下你的项目吗？",
+    "start": 1.0,
+    "end": 3.177,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "你能介绍一下你的项目吗？",
+    "start": 1.3,
+    "end": 3.477,
+    "kind": "echo"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我来回答。",
+    "start": 5.677,
+    "end": 7.161,
+    "kind": "speech"
+   }
+  ]
+ },
+ "mixed_01": {
+  "audio": {
+   "noise": true,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "你在项目里用的 transformer 和 attention 机制是怎么 work 的？",
+    "start": 1.0,
+    "end": 5.766,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我来解释一下。",
+    "start": 8.266,
+    "end": 10.145,
+    "kind": "speech"
+   }
+  ]
+ },
+ "mixed_03": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "能不能讲讲你对 microservice 和 monolith 的 trade-off 的理解？",
+    "start": 1.0,
+    "end": 5.592,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "好的，我来解释一下。",
+    "start": 8.092,
+    "end": 9.971,
+    "kind": "speech"
+   }
+  ]
+ },
+ "english_01": {
+  "audio": {
+   "noise": false,
+   "echo": false
+  },
+  "events": [
+   {
+    "speaker": "对方",
+    "text": "Could you tell me about a challenging project you worked on?",
+    "start": 1.0,
+    "end": 4.005,
+    "kind": "speech"
+   },
+   {
+    "speaker": "我",
+    "text": "Sure, let me explain.",
+    "start": 6.505,
+    "end": 7.993,
+    "kind": "speech"
+   }
+  ]
+ }
+}

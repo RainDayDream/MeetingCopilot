@@ -1,0 +1,49 @@
+{
+ "id": "backchannel_02",
+ "category": "backchannel",
+ "lang": "zh",
+ "description": "对方的长问题说到一半，我插一句很短的附和；仍应在问题说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你刚才提到用了图神经网络。",
+   "start": 1.0,
+   "end": 4.107,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "对。",
+   "start": 4.607,
+   "end": 5.095,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "那它相比传统的协同过滤优势在哪里？",
+   "start": 5.307,
+   "end": 9.367,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来回答这个问题。",
+   "start": 11.867,
+   "end": 14.498,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 9.367,
+   "question_text": "你刚才提到用了图神经网络。那它相比传统的协同过滤优势在哪里？",
+   "reply_start": 11.867,
+   "note": "中途附和：对。",
+   "window_end": 11.867,
+   "id": "q1"
+  }
+ ]
+}

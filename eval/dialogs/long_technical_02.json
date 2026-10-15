@@ -1,0 +1,49 @@
+{
+ "id": "long_technical_02",
+ "category": "long_technical",
+ "lang": "zh",
+ "description": "多句长题，句间有停顿；应在全部说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "假设你要设计一个短链接服务。",
+   "start": 1.0,
+   "end": 4.345,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "日活一千万，读写比是一百比一。",
+   "start": 6.245,
+   "end": 9.59,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你会怎么设计存储和缓存？",
+   "start": 10.59,
+   "end": 13.459,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我先想一下思路。",
+   "start": 15.959,
+   "end": 18.352,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 13.459,
+   "question_text": "假设你要设计一个短链接服务。日活一千万，读写比是一百比一。你会怎么设计存储和缓存？",
+   "reply_start": 15.959,
+   "note": "长技术题",
+   "window_end": 15.959,
+   "id": "q1"
+  }
+ ]
+}

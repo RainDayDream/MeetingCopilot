@@ -1,0 +1,52 @@
+{
+ "id": "backchannel_01",
+ "category": "backchannel",
+ "lang": "zh",
+ "description": "对方的长问题说到一半，我插一句很短的附和；仍应在问题说完后触发",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "我想了解一下，你在这个项目里",
+   "start": 1.0,
+   "end": 4.022,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "嗯",
+   "start": 4.622,
+   "end": 4.861,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "具体负责的是哪一个模块？",
+   "start": 5.422,
+   "end": 7.693,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来回答这个问题。",
+   "start": 10.193,
+   "end": 12.455,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 7.693,
+   "question_text": "我想了解一下，你在这个项目里具体负责的是哪一个模块？",
+   "reply_start": 10.193,
+   "note": "中途附和：嗯",
+   "window_end": 10.193,
+   "id": "q1"
+  }
+ ]
+}

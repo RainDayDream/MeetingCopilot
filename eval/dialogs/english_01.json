@@ -1,0 +1,38 @@
+{
+ "id": "english_01",
+ "category": "english",
+ "lang": "en",
+ "description": "英文提问",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Could you tell me about a challenging project you worked on?",
+   "start": 1.0,
+   "end": 4.005,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me explain.",
+   "start": 6.505,
+   "end": 7.993,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.005,
+   "question_text": "Could you tell me about a challenging project you worked on?",
+   "reply_start": 6.505,
+   "note": "英文",
+   "window_end": 6.505,
+   "id": "q1"
+  }
+ ]
+}

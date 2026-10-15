@@ -1,0 +1,12 @@
+[
+ {"id": "c01", "dialog": "full_interview_01", "entry": "q2"},
+ {"id": "c02", "dialog": "full_interview_01", "entry": "q4"},
+ {"id": "c03", "dialog": "full_interview_01", "entry": "q6"},
+ {"id": "c04", "dialog": "full_interview_02", "entry": "q2"},
+ {"id": "c05", "dialog": "full_interview_02", "entry": "q3"},
+ {"id": "c06", "dialog": "full_interview_03", "entry": "q3"},
+ {"id": "c07", "dialog": "think_pause_01", "entry": "q1"},
+ {"id": "c08", "dialog": "half_followup_02", "entry": "q2"},
+ {"id": "c09", "dialog": "long_technical_02", "entry": "q1"},
+ {"id": "c10", "dialog": "mixed_04", "entry": "q1"}
+]

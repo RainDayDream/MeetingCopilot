@@ -1,0 +1,49 @@
+{
+ "id": "backchannel_03",
+ "category": "backchannel",
+ "lang": "en",
+ "description": "对方的长问题说到一半，我插一句很短的附和；仍应在问题说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "You mentioned you used Redis.",
+   "start": 1.0,
+   "end": 3.102,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Right.",
+   "start": 3.652,
+   "end": 4.272,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "How did you handle cache invalidation?",
+   "start": 4.402,
+   "end": 6.874,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me answer that.",
+   "start": 9.374,
+   "end": 11.476,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 6.874,
+   "question_text": "You mentioned you used Redis.How did you handle cache invalidation?",
+   "reply_start": 9.374,
+   "note": "中途附和：Right.",
+   "window_end": 9.374,
+   "id": "q1"
+  }
+ ]
+}

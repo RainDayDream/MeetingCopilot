@@ -1,0 +1,42 @@
+{
+ "id": "echo_04",
+ "category": "echo",
+ "lang": "en",
+ "description": "外放回声：对方的话在“我”通道 0.3 秒后重复出现；应回答，且回声不应被当成我在说话",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "What is the hardest bug you have ever fixed?",
+   "start": 1.0,
+   "end": 4.583,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "What is the hardest bug you have ever fixed?",
+   "start": 1.3,
+   "end": 4.883,
+   "kind": "echo"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me answer.",
+   "start": 7.083,
+   "end": 8.814,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.583,
+   "question_text": "What is the hardest bug you have ever fixed?",
+   "reply_start": 7.083,
+   "note": "外放回声",
+   "window_end": 7.083,
+   "id": "q1"
+  }
+ ]
+}

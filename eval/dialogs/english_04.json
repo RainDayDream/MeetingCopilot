@@ -1,0 +1,35 @@
+{
+ "id": "english_04",
+ "category": "english",
+ "lang": "en",
+ "description": "英文提问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "How would you design a rate limiter?",
+   "start": 1.0,
+   "end": 3.843,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me explain.",
+   "start": 6.343,
+   "end": 8.074,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 3.843,
+   "question_text": "How would you design a rate limiter?",
+   "reply_start": 6.343,
+   "note": "英文",
+   "window_end": 6.343,
+   "id": "q1"
+  }
+ ]
+}

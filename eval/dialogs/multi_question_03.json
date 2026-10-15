@@ -1,0 +1,49 @@
+{
+ "id": "multi_question_03",
+ "category": "multi_question",
+ "lang": "zh",
+ "description": "对方连珠式提出多个问题；应在最后一问说完后触发一次",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "这个项目的指标提升了多少？",
+   "start": 1.0,
+   "end": 4.107,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "是怎么衡量的？",
+   "start": 5.107,
+   "end": 6.786,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "有没有做过 A/B 实验？",
+   "start": 7.886,
+   "end": 10.543,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我一个一个来回答。",
+   "start": 13.043,
+   "end": 15.674,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 10.543,
+   "question_text": "这个项目的指标提升了多少？是怎么衡量的？有没有做过 A/B 实验？",
+   "reply_start": 13.043,
+   "note": "连珠多问",
+   "window_end": 13.043,
+   "id": "q1"
+  }
+ ]
+}

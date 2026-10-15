@@ -1,0 +1,35 @@
+{
+ "id": "me_interrupt_05",
+ "category": "me_interrupt",
+ "lang": "en",
+ "description": "我方在问题说完前后很快开口，不应再触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Could you walk me through the architecture?",
+   "start": 1.0,
+   "end": 3.843,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, so the architecture has three layers, the gateway, the services and the storage.",
+   "start": 4.143,
+   "end": 9.578,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.843,
+   "question_text": "Could you walk me through the architecture?",
+   "reply_start": 4.143,
+   "note": "我在问题说完后 0.3 秒开始回答",
+   "window_end": 12.143,
+   "id": "q1"
+  }
+ ]
+}

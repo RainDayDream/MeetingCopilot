@@ -1,0 +1,148 @@
+{
+ "id": "full_interview_02",
+ "category": "full_interview",
+ "lang": "mixed",
+ "description": "完整中英混杂面试片段",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Hi，欢迎你，我们先聊聊。",
+   "start": 1.0,
+   "end": 3.525,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Hi，谢谢。",
+   "start": 4.525,
+   "end": 5.622,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你能讲讲 transformer 在推荐里的应用吗？",
+   "start": 7.122,
+   "end": 10.6,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "可以，transformer 主要用来建模用户的行为序列。",
+   "start": 13.1,
+   "end": 17.292,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "那 attention 的 complexity 怎么优化？",
+   "start": 18.892,
+   "end": 21.311,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "我们用了 linear attention 和 sparse pattern。",
+   "start": 23.811,
+   "end": 26.733,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "嗯，这个思路挺有意思。",
+   "start": 28.233,
+   "end": 30.626,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "谢谢。",
+   "start": 31.626,
+   "end": 32.352,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "再说一下你们怎么做 online serving。",
+   "start": 33.852,
+   "end": 36.986,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "在线我们用 Triton 做 batch inference。",
+   "start": 39.486,
+   "end": 42.276,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "好，我们进入下一个环节。",
+   "start": 43.776,
+   "end": 46.407,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.525,
+   "question_text": "Hi，欢迎你，我们先聊聊。",
+   "reply_start": 4.525,
+   "note": "寒暄",
+   "window_end": 7.112,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 7.122,
+   "question_end": 10.6,
+   "question_text": "你能讲讲 transformer 在推荐里的应用吗？",
+   "reply_start": 13.1,
+   "note": "混杂提问",
+   "window_end": 13.1,
+   "id": "q2"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 18.892,
+   "question_end": 21.311,
+   "question_text": "那 attention 的 complexity 怎么优化？",
+   "reply_start": 23.811,
+   "note": "混杂追问",
+   "window_end": 23.811,
+   "id": "q3"
+  },
+  {
+   "should_answer": false,
+   "turn_start": 28.233,
+   "question_end": 30.626,
+   "question_text": "嗯，这个思路挺有意思。",
+   "reply_start": 31.626,
+   "note": "评价",
+   "window_end": 33.842,
+   "id": "q4"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 33.852,
+   "question_end": 36.986,
+   "question_text": "再说一下你们怎么做 online serving。",
+   "reply_start": 39.486,
+   "note": "指令式",
+   "window_end": 39.486,
+   "id": "q5"
+  },
+  {
+   "should_answer": false,
+   "turn_start": 43.776,
+   "question_end": 46.407,
+   "question_text": "好，我们进入下一个环节。",
+   "reply_start": null,
+   "note": "过渡",
+   "window_end": 54.407,
+   "id": "q6"
+  }
+ ]
+}

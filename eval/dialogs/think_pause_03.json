@@ -1,0 +1,42 @@
+{
+ "id": "think_pause_03",
+ "category": "think_pause",
+ "lang": "zh",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "这个方案我有点好奇，那个……",
+   "start": 1.0,
+   "end": 3.869,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "为什么没有选择用向量检索？",
+   "start": 7.069,
+   "end": 10.176,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个问题我来说一下，主要有几个方面。",
+   "start": 12.676,
+   "end": 17.212,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 10.176,
+   "question_text": "这个方案我有点好奇，那个……为什么没有选择用向量检索？",
+   "reply_start": 12.676,
+   "note": "停顿 3.2s",
+   "window_end": 12.676,
+   "id": "q1"
+  }
+ ]
+}

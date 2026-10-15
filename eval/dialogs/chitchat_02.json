@@ -1,0 +1,28 @@
+{
+ "id": "chitchat_02",
+ "category": "chitchat",
+ "lang": "zh",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "嗯，你的简历我看过了，整体不错。",
+   "start": 1.0,
+   "end": 4.345,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 4.345,
+   "question_text": "嗯，你的简历我看过了，整体不错。",
+   "reply_start": null,
+   "note": "寒暄/陈述",
+   "window_end": 12.345,
+   "id": "q1"
+  }
+ ]
+}

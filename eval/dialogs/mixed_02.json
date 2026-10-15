@@ -1,0 +1,35 @@
+{
+ "id": "mixed_02",
+ "category": "mixed_lang",
+ "lang": "mixed",
+ "description": "中英混杂的提问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "这个 pipeline 里 latency 的瓶颈在哪里？",
+   "start": 1.0,
+   "end": 4.134,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来解释一下。",
+   "start": 6.634,
+   "end": 8.789,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.134,
+   "question_text": "这个 pipeline 里 latency 的瓶颈在哪里？",
+   "reply_start": 6.634,
+   "note": "中英混杂",
+   "window_end": 6.634,
+   "id": "q1"
+  }
+ ]
+}

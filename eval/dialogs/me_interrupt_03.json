@@ -1,0 +1,35 @@
+{
+ "id": "me_interrupt_03",
+ "category": "me_interrupt",
+ "lang": "zh",
+ "description": "我方在问题说完前后很快开口，不应再触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你说说这个方案的缺点。",
+   "start": 1.0,
+   "end": 3.631,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个我了解，主要有三点，第一是成本，第二是复杂度。",
+   "start": 4.231,
+   "end": 9.481,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.631,
+   "question_text": "你说说这个方案的缺点。",
+   "reply_start": 4.231,
+   "note": "我在问题说完后 0.6 秒抢答",
+   "window_end": 12.231,
+   "id": "q1"
+  }
+ ]
+}

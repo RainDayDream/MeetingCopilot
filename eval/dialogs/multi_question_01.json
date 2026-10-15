@@ -1,0 +1,45 @@
+{
+ "id": "multi_question_01",
+ "category": "multi_question",
+ "lang": "zh",
+ "description": "对方连珠式提出多个问题；应在最后一问说完后触发一次",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你们团队有多少人？",
+   "start": 1.0,
+   "end": 2.747,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "另外你们的迭代周期是怎样的？",
+   "start": 3.747,
+   "end": 6.33,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我一个一个来回答。",
+   "start": 8.83,
+   "end": 10.836,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 6.33,
+   "question_text": "你们团队有多少人？另外你们的迭代周期是怎样的？",
+   "reply_start": 8.83,
+   "note": "连珠多问",
+   "window_end": 8.83,
+   "id": "q1"
+  }
+ ]
+}

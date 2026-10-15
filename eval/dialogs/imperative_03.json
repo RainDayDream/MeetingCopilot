@@ -1,0 +1,35 @@
+{
+ "id": "imperative_03",
+ "category": "imperative",
+ "lang": "zh",
+ "description": "没有疑问词/问号的指令式提问，应回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "请你介绍一下自己。",
+   "start": 1.0,
+   "end": 3.155,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我先从整体说起。",
+   "start": 5.655,
+   "end": 8.048,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 3.155,
+   "question_text": "请你介绍一下自己。",
+   "reply_start": 5.655,
+   "note": "指令式",
+   "window_end": 5.655,
+   "id": "q1"
+  }
+ ]
+}

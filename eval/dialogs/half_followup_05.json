@@ -1,0 +1,66 @@
+{
+ "id": "half_followup_05",
+ "category": "half_followup",
+ "lang": "zh",
+ "description": "先有一问一答，随后对方说半截追问并停顿，再补完",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你们是怎么评估模型效果的？",
+   "start": 1.0,
+   "end": 4.107,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "离线看 AUC 和召回率，线上做 A/B 实验看点击率和停留时长。",
+   "start": 6.607,
+   "end": 12.968,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "那你刚才提到的那个指标，",
+   "start": 14.468,
+   "end": 17.337,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "具体是怎么算出来的？",
+   "start": 19.537,
+   "end": 21.93,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个问题我想一下，大致是这样的。",
+   "start": 24.43,
+   "end": 28.013,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.107,
+   "question_text": "你们是怎么评估模型效果的？",
+   "reply_start": 6.607,
+   "note": "",
+   "window_end": 6.607,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 14.468,
+   "question_end": 21.93,
+   "question_text": "那你刚才提到的那个指标，具体是怎么算出来的？",
+   "reply_start": 24.43,
+   "note": "半截追问",
+   "window_end": 24.43,
+   "id": "q2"
+  }
+ ]
+}

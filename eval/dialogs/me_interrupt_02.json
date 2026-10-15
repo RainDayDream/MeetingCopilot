@@ -1,0 +1,42 @@
+{
+ "id": "me_interrupt_02",
+ "category": "me_interrupt",
+ "lang": "zh",
+ "description": "我方在问题说完前后很快开口，不应再触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你们这个系统的瓶颈",
+   "start": 1.0,
+   "end": 3.393,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "主要在哪里？",
+   "start": 4.393,
+   "end": 5.833,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "对，我来说一下这个问题，瓶颈主要在数据库的写入。",
+   "start": 5.233,
+   "end": 10.483,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 5.833,
+   "question_text": "你们这个系统的瓶颈主要在哪里？",
+   "reply_start": 5.233,
+   "note": "我在问题说到一半时插话",
+   "window_end": 13.833,
+   "id": "q1"
+  }
+ ]
+}

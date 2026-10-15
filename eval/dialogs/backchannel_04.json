@@ -1,0 +1,49 @@
+{
+ "id": "backchannel_04",
+ "category": "backchannel",
+ "lang": "zh",
+ "description": "对方的长问题说到一半，我插一句很短的附和；仍应在问题说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "这个问题比较开放。",
+   "start": 1.0,
+   "end": 3.155,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的",
+   "start": 3.555,
+   "end": 4.281,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你觉得推荐系统最难的地方是什么？",
+   "start": 4.155,
+   "end": 7.976,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来回答这个问题。",
+   "start": 10.476,
+   "end": 13.107,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 7.976,
+   "question_text": "这个问题比较开放。你觉得推荐系统最难的地方是什么？",
+   "reply_start": 10.476,
+   "note": "中途附和：好的",
+   "window_end": 10.476,
+   "id": "q1"
+  }
+ ]
+}

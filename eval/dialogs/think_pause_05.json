@@ -1,0 +1,42 @@
+{
+ "id": "think_pause_05",
+ "category": "think_pause",
+ "lang": "en",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Let me think... so what I wanted to ask is",
+   "start": 1.0,
+   "end": 4.954,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "how did you handle the latency requirements?",
+   "start": 7.154,
+   "end": 9.997,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me explain that in a few points.",
+   "start": 12.497,
+   "end": 16.08,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 9.997,
+   "question_text": "Let me think... so what I wanted to ask ishow did you handle the latency requirements?",
+   "reply_start": 12.497,
+   "note": "停顿 2.2s",
+   "window_end": 12.497,
+   "id": "q1"
+  }
+ ]
+}

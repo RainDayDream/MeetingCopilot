@@ -1,0 +1,66 @@
+{
+ "id": "half_followup_04",
+ "category": "half_followup",
+ "lang": "en",
+ "description": "先有一问一答，随后对方说半截追问并停顿，再补完",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Which message queue did you use?",
+   "start": 1.0,
+   "end": 3.472,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "We used Kafka because of its throughput and the ecosystem around it.",
+   "start": 5.972,
+   "end": 10.666,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "So when you said you used Kafka,",
+   "start": 12.166,
+   "end": 15.009,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "why not Pulsar?",
+   "start": 16.509,
+   "end": 17.87,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Let me think, roughly it works like this.",
+   "start": 20.37,
+   "end": 23.583,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 3.472,
+   "question_text": "Which message queue did you use?",
+   "reply_start": 5.972,
+   "note": "",
+   "window_end": 5.972,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 12.166,
+   "question_end": 17.87,
+   "question_text": "So when you said you used Kafka,why not Pulsar?",
+   "reply_start": 20.37,
+   "note": "半截追问",
+   "window_end": 20.37,
+   "id": "q2"
+  }
+ ]
+}

@@ -1,0 +1,49 @@
+{
+ "id": "long_technical_01",
+ "category": "long_technical",
+ "lang": "zh",
+ "description": "多句长题，句间有停顿；应在全部说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "给定一个整数数组，找出其中和为目标值的两个数。",
+   "start": 1.0,
+   "end": 6.25,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "要求时间复杂度低于 O(n²)。",
+   "start": 7.25,
+   "end": 10.384,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "请你给出思路？",
+   "start": 11.484,
+   "end": 13.163,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我先想一下思路。",
+   "start": 15.663,
+   "end": 18.056,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 13.163,
+   "question_text": "给定一个整数数组，找出其中和为目标值的两个数。要求时间复杂度低于 O(n²)。请你给出思路？",
+   "reply_start": 15.663,
+   "note": "长技术题",
+   "window_end": 15.663,
+   "id": "q1"
+  }
+ ]
+}

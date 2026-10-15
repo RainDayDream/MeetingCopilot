@@ -1,0 +1,38 @@
+{
+ "id": "me_interrupt_01",
+ "category": "me_interrupt",
+ "lang": "zh",
+ "description": "我方在问题说完前后很快开口，不应再触发",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你能介绍一下这个项目的整体架构吗？",
+   "start": 1.0,
+   "end": 4.222,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个项目整体分为接入层、服务层和数据层三层。",
+   "start": 4.422,
+   "end": 9.702,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 4.222,
+   "question_text": "你能介绍一下这个项目的整体架构吗？",
+   "reply_start": 4.422,
+   "note": "我在问题说完后 0.2 秒内就开始回答",
+   "window_end": 12.422,
+   "id": "q1"
+  }
+ ]
+}

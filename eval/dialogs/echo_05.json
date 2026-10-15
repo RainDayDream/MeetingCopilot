@@ -1,0 +1,42 @@
+{
+ "id": "echo_05",
+ "category": "echo",
+ "lang": "zh",
+ "description": "外放回声：对方的话在“我”通道 0.3 秒后重复出现；应回答，且回声不应被当成我在说话",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你是怎么理解 microservice 的？",
+   "start": 1.0,
+   "end": 3.287,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "你是怎么理解 microservice 的？",
+   "start": 1.3,
+   "end": 3.587,
+   "kind": "echo"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来回答。",
+   "start": 5.787,
+   "end": 7.466,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 3.287,
+   "question_text": "你是怎么理解 microservice 的？",
+   "reply_start": 5.787,
+   "note": "外放回声",
+   "window_end": 5.787,
+   "id": "q1"
+  }
+ ]
+}

@@ -1,3 +1,7 @@
 .build/
 build/
 .DS_Store
+eval/.cache/
+eval/results/.partial/
+eval/results/latest.json
+.swiftpm/

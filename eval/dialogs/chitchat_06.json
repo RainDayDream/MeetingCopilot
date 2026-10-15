@@ -1,0 +1,28 @@
+{
+ "id": "chitchat_06",
+ "category": "chitchat",
+ "lang": "en",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "OK, that makes sense, thank you for the explanation.",
+   "start": 1.0,
+   "end": 4.583,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 4.583,
+   "question_text": "OK, that makes sense, thank you for the explanation.",
+   "reply_start": null,
+   "note": "寒暄/陈述",
+   "window_end": 12.583,
+   "id": "q1"
+  }
+ ]
+}

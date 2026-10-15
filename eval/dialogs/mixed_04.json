@@ -1,0 +1,35 @@
+{
+ "id": "mixed_04",
+ "category": "mixed_lang",
+ "lang": "mixed",
+ "description": "中英混杂的提问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你们的 A/B test 是怎么设计的，metric 用的是 CTR 还是 retention？",
+   "start": 1.0,
+   "end": 6.806,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来解释一下。",
+   "start": 9.306,
+   "end": 11.461,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 6.806,
+   "question_text": "你们的 A/B test 是怎么设计的，metric 用的是 CTR 还是 retention？",
+   "reply_start": 9.306,
+   "note": "中英混杂",
+   "window_end": 9.306,
+   "id": "q1"
+  }
+ ]
+}

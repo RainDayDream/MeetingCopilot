@@ -1,0 +1,28 @@
+{
+ "id": "chitchat_07",
+ "category": "chitchat",
+ "lang": "zh",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "好的，我记一下，你继续。",
+   "start": 1.0,
+   "end": 3.393,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.393,
+   "question_text": "好的，我记一下，你继续。",
+   "reply_start": null,
+   "note": "寒暄/陈述",
+   "window_end": 11.393,
+   "id": "q1"
+  }
+ ]
+}

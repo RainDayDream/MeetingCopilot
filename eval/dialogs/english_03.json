@@ -1,0 +1,35 @@
+{
+ "id": "english_03",
+ "category": "english",
+ "lang": "en",
+ "description": "英文提问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Why do you want to join our company?",
+   "start": 1.0,
+   "end": 4.213,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me explain.",
+   "start": 6.713,
+   "end": 8.444,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.213,
+   "question_text": "Why do you want to join our company?",
+   "reply_start": 6.713,
+   "note": "英文",
+   "window_end": 6.713,
+   "id": "q1"
+  }
+ ]
+}

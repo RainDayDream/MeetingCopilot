@@ -1,0 +1,38 @@
+{
+ "id": "imperative_01",
+ "category": "imperative",
+ "lang": "zh",
+ "description": "没有疑问词/问号的指令式提问，应回答",
+ "audio": {
+  "noise": true,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "讲讲你的项目。",
+   "start": 1.0,
+   "end": 2.259,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我先从整体说起。",
+   "start": 4.759,
+   "end": 7.009,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 2.259,
+   "question_text": "讲讲你的项目。",
+   "reply_start": 4.759,
+   "note": "指令式",
+   "window_end": 4.759,
+   "id": "q1"
+  }
+ ]
+}

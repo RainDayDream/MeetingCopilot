@@ -1,0 +1,132 @@
+{
+ "think_pause_01": {
+  "file": "think_pause_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 19.25,
+  "mic_noise": true,
+  "echo": false,
+  "reference": {
+   "对方": "我们先来看看你的项目，嗯……我想问的是你在这个项目里遇到的最大技术挑战是什么？",
+   "我": "好的，这个问题我来说一下，主要有几个方面。"
+  }
+ },
+ "multi_question_01": {
+  "file": "multi_question_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 12.84,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "你们团队有多少人？另外你们的迭代周期是怎样的？",
+   "我": "好的，我一个一个来回答。"
+  }
+ },
+ "imperative_01": {
+  "file": "imperative_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 9.01,
+  "mic_noise": true,
+  "echo": false,
+  "reference": {
+   "对方": "讲讲你的项目。",
+   "我": "好的，我先从整体说起。"
+  }
+ },
+ "imperative_04": {
+  "file": "imperative_04.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 9.08,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "Walk me through your resume.",
+   "我": "Sure, let me start from the big picture."
+  }
+ },
+ "me_interrupt_01": {
+  "file": "me_interrupt_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 11.7,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "你能介绍一下这个项目的整体架构吗？",
+   "我": "好的，这个项目整体分为接入层、服务层和数据层三层。"
+  }
+ },
+ "backchannel_01": {
+  "file": "backchannel_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 14.46,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "我想了解一下，你在这个项目里具体负责的是哪一个模块？",
+   "我": "嗯好的，我来回答这个问题。"
+  }
+ },
+ "echo_01": {
+  "file": "echo_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 9.16,
+  "mic_noise": false,
+  "echo": true,
+  "reference": {
+   "对方": "你能介绍一下你的项目吗？",
+   "我": "好的，我来回答。"
+  }
+ },
+ "mixed_01": {
+  "file": "mixed_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 12.14,
+  "mic_noise": true,
+  "echo": false,
+  "reference": {
+   "对方": "你在项目里用的 transformer 和 attention 机制是怎么 work 的？",
+   "我": "好的，我来解释一下。"
+  }
+ },
+ "mixed_03": {
+  "file": "mixed_03.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 11.97,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "能不能讲讲你对 microservice 和 monolith 的 trade-off 的理解？",
+   "我": "好的，我来解释一下。"
+  }
+ },
+ "english_01": {
+  "file": "english_01.wav",
+  "left": "对方",
+  "right": "我",
+  "sample_rate": 16000,
+  "duration": 9.99,
+  "mic_noise": false,
+  "echo": false,
+  "reference": {
+   "对方": "Could you tell me about a challenging project you worked on?",
+   "我": "Sure, let me explain."
+  }
+ }
+}

@@ -1,0 +1,28 @@
+{
+ "id": "chitchat_04",
+ "category": "chitchat",
+ "lang": "zh",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "好，那我们进入下一个环节。",
+   "start": 1.0,
+   "end": 3.869,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.869,
+   "question_text": "好，那我们进入下一个环节。",
+   "reply_start": null,
+   "note": "寒暄/陈述",
+   "window_end": 11.869,
+   "id": "q1"
+  }
+ ]
+}

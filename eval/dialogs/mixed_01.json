@@ -1,0 +1,38 @@
+{
+ "id": "mixed_01",
+ "category": "mixed_lang",
+ "lang": "mixed",
+ "description": "中英混杂的提问",
+ "audio": {
+  "noise": true,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你在项目里用的 transformer 和 attention 机制是怎么 work 的？",
+   "start": 1.0,
+   "end": 5.766,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来解释一下。",
+   "start": 8.266,
+   "end": 10.145,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 5.766,
+   "question_text": "你在项目里用的 transformer 和 attention 机制是怎么 work 的？",
+   "reply_start": 8.266,
+   "note": "中英混杂",
+   "window_end": 8.266,
+   "id": "q1"
+  }
+ ]
+}
