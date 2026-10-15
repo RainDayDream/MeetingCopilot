@@ -37,6 +37,9 @@ struct Settings: Codable {
     var captureMic = true
     var screenshotDisplay: UInt32? = nil  // nil = 鼠标所在屏幕
     var recentChars = 6000
+    var smartContext: Bool? = nil       // 智能上下文（当前轮 + 滚动摘要），nil = 开
+    var meetingBackground: String? = nil // 会议背景：岗位、简历要点、议题等，每次都会带上
+    var historyTurns: Int? = nil  // 带入最近几次问答作为上下文；nil = 2，0 = 不带
     var autoAnswer = false
     var alwaysOnTop: Bool? = nil  // 默认关闭；旧版本的 floatOnTop 字段被忽略
     var hideFromCapture: Bool? = nil  // 默认关闭；旧字段 hideFromScreenShare 被忽略

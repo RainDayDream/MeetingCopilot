@@ -14,15 +14,22 @@ enum LLMError: LocalizedError {
     }
 }
 
+/// 之前的一轮问答，作为多轮对话历史发给模型
+struct ChatTurn {
+    let user: String
+    let assistant: String
+}
+
 enum LLM {
     /// 流式调用大模型，逐段返回文本。只发出一个 HTTPS 请求，不执行任何返回内容。
     static func stream(settings: Settings, apiKey: String, system: String,
-                       user: String, imageJPEG: Data?) -> AsyncThrowingStream<String, Error> {
+                       user: String, imageJPEG: Data?,
+                       history: [ChatTurn] = [], systemTail: String = "") -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { cont in
             let task = Task {
                 do {
                     let req = try makeRequest(settings: settings, apiKey: apiKey,
-                                              system: system, user: user, image: imageJPEG)
+                                              system: system, tail: systemTail, user: user, image: imageJPEG, history: history)
                     let (bytes, resp) = try await URLSession.shared.bytes(for: req)
                     guard let http = resp as? HTTPURLResponse else { throw LLMError.http(0, "无响应") }
                     if !(200..<300).contains(http.statusCode) {
@@ -53,8 +60,8 @@ enum LLM {
         return u
     }
 
-    private static func makeRequest(settings: Settings, apiKey: String, system: String,
-                                    user: String, image: Data?) throws -> URLRequest {
+    private static func makeRequest(settings: Settings, apiKey: String, system: String, tail: String,
+                                    user: String, image: Data?, history: [ChatTurn]) throws -> URLRequest {
         let base = try validate(settings.baseURL)
         var req: URLRequest
         var body: [String: Any]
@@ -70,9 +77,13 @@ enum LLM {
                 content = [["type": "text", "text": user],
                            ["type": "image_url", "image_url": ["url": "data:image/jpeg;base64,\(b64)"]]] as [[String: Any]]
             }
-            body = ["model": settings.model, "stream": true,
-                    "messages": [["role": "system", "content": system],
-                                 ["role": "user", "content": content]]]
+            var msgs: [[String: Any]] = [["role": "system", "content": tail.isEmpty ? system : system + "\n\n" + tail]]
+            for t in history {
+                msgs.append(["role": "user", "content": t.user])
+                msgs.append(["role": "assistant", "content": t.assistant])
+            }
+            msgs.append(["role": "user", "content": content])
+            body = ["model": settings.model, "stream": true, "messages": msgs]
         case .anthropic:
             req = URLRequest(url: base.appendingPathComponent("v1/messages"))
             req.setValue(apiKey, forHTTPHeaderField: "x-api-key")
@@ -82,8 +93,16 @@ enum LLM {
                 parts.append(["type": "image", "source": ["type": "base64", "media_type": "image/jpeg", "data": b64]])
             }
             parts.append(["type": "text", "text": user])
-            body = ["model": settings.model, "max_tokens": 1500, "stream": true, "system": system,
-                    "messages": [["role": "user", "content": parts]]]
+            var msgs: [[String: Any]] = []
+            for t in history {
+                msgs.append(["role": "user", "content": t.user])
+                msgs.append(["role": "assistant", "content": t.assistant])
+            }
+            msgs.append(["role": "user", "content": parts])
+            // 稳定前缀（系统提示词/背景/摘要）打缓存标记，后续请求命中缓存可明显降低延迟和费用
+            var sys: [[String: Any]] = [["type": "text", "text": system, "cache_control": ["type": "ephemeral"]]]
+            if !tail.isEmpty { sys.append(["type": "text", "text": tail]) }
+            body = ["model": settings.model, "max_tokens": 1500, "stream": true, "system": sys, "messages": msgs]
         }
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")

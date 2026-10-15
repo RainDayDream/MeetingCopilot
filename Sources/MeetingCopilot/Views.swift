@@ -8,6 +8,7 @@ struct MeetingCopilotApp: App {
     init() {
         HotKey.register()
         if let i = CommandLine.arguments.firstIndex(of: "--selftest-whisper") { WhisperSelfTest.run(args: Array(CommandLine.arguments.dropFirst(i + 1))) }
+        if let i = CommandLine.arguments.firstIndex(of: "--selftest-context") { ContextSelfTest.run(port: CommandLine.arguments[i + 1]) }
         if let i = CommandLine.arguments.firstIndex(of: "--selftest-llm") {
             SelfTest.run(args: Array(CommandLine.arguments.dropFirst(i + 1)))
         }
@@ -32,7 +33,8 @@ enum SelfTest {
         Task {
             do {
                 for try await c in LLM.stream(settings: s, apiKey: args.count > 3 ? args[3] : "",
-                                              system: "sys", user: "hi", imageJPEG: Data([1, 2, 3])) {
+                                              system: "sys", user: "hi", imageJPEG: Data([1, 2, 3]),
+                                              history: [ChatTurn(user: "q1", assistant: "a1")]) {
                     print(c, terminator: "")
                 }
                 print("\n[selftest ok]"); exit(0)
@@ -156,6 +158,13 @@ struct ContentView: View {
                     Text(e).foregroundStyle(.red).padding(8)
                         .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
                 }
+                if !m.meetingSummary.isEmpty {
+                    DisclosureGroup("会议摘要（自动维护，较早的对话已压缩到这里）") {
+                        Text(m.meetingSummary).font(.callout).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }.font(.caption)
+                    Divider()
+                }
                 ForEach(m.answers) { a in
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
@@ -185,6 +194,8 @@ struct ContentView: View {
             TextField("补充提问（可选，回车发送；留空则按预设直接回答）", text: $question)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit { send() }
+            Button("新话题") { m.newTopic() }
+                .help("之后的回答不再参考此前的问答（转写不受影响）")
             if m.isAsking {
                 Button("停止") { m.cancelAsk() }
             } else {
@@ -273,9 +284,12 @@ struct SettingsView: View {
                     Text("在左侧选择预设进行编辑").foregroundStyle(.secondary)
                 }
                 Divider()
+                Text("会议背景（岗位/简历要点/议题等，每次提问都会带上）").font(.caption)
+                TextEditor(text: Binding(get: { m.settings.meetingBackground ?? "" }, set: { m.settings.meetingBackground = $0 }))
+                    .font(.body).border(Color.gray.opacity(0.3)).frame(height: 80)
                 Text("系统提示词（全局）").font(.caption)
                 TextEditor(text: $m.settings.systemPrompt).font(.body).border(Color.gray.opacity(0.3))
-                    .frame(height: 140)
+                    .frame(height: 100)
                 Button("恢复默认系统提示词") { m.settings.systemPrompt = Settings.defaultSystemPrompt }
             }
         }.padding()
@@ -292,7 +306,11 @@ struct SettingsView: View {
             }
             Text("首次使用某个模型需联网下载并优化，之后离线可用；切换模型后重新点“开始监听”。").font(.caption).foregroundStyle(.secondary)
             Toggle("同时转写我的麦克风（标记为“我”）", isOn: $m.settings.captureMic)
-            Stepper("提问时带入最近 \(m.settings.recentChars) 字转写", value: $m.settings.recentChars, in: 1000...30000, step: 1000)
+            Toggle("智能上下文：当前这一轮 + 近期对话 + 自动会议摘要", isOn: Binding(get: { m.settings.smartContext ?? true }, set: { m.settings.smartContext = $0 }))
+            Text("开启后：以对方最近一段连续发言为“当前这一轮”，更早的对话由后台压缩成摘要，回答既快又不丢上下文（摘要会额外调用一次模型）。关闭则按固定字数截取最近转写。").font(.caption).foregroundStyle(.secondary)
+            Stepper("带入最近 \(m.settings.historyTurns ?? 2) 次问答作为上下文（0 = 不带）",
+                    value: Binding(get: { m.settings.historyTurns ?? 2 }, set: { m.settings.historyTurns = $0 }), in: 0...6)
+            Stepper("近期对话上限 \(m.settings.recentChars) 字（超出的部分会被摘要）", value: $m.settings.recentChars, in: 1000...30000, step: 1000)
             Toggle("窗口置顶（默认关闭）", isOn: Binding(get: { m.settings.alwaysOnTop ?? false }, set: { m.settings.alwaysOnTop = $0 }))
             Toggle("对截屏/录屏/屏幕共享隐藏本窗口（默认关闭）", isOn: Binding(get: { m.settings.hideFromCapture ?? false }, set: { m.settings.hideFromCapture = $0 }))
             Text("本 App 的截图始终排除自身窗口。新版 macOS 上“对屏幕共享隐藏”不一定对所有会议软件生效，共享屏幕前请自行确认。")
@@ -368,6 +386,32 @@ enum WhisperSelfTest {
             }
             stream.stop()
             try? await Task.sleep(nanoseconds: 8_000_000_000)
+            exit(0)
+        }
+        RunLoop.main.run()
+    }
+}
+
+/// 自检：模拟一场较长的面试，检查“当前轮 + 摘要 + 近期对话”的组装（配合本地 mock 服务）
+enum ContextSelfTest {
+    static func run(port: String) {
+        Task { @MainActor in
+            let m = AppModel()
+            m.settings.baseURL = "http://127.0.0.1:\(port)/v1"
+            m.settings.model = "mock"
+            m.settings.includeScreenshot = false
+            m.settings.meetingBackground = "岗位：机器学习工程师；我的简历要点：做过推荐系统召回。"
+            for i in 1...12 {
+                m.debugAppend("对方", "第\(i)个问题：" + String(repeating: "请介绍一下你在项目里用到的技术方案与取舍。", count: 7))
+                m.debugAppend("我", "第\(i)个回答：" + String(repeating: "我们采用了双塔召回加重排的方案并做了离线评估。", count: 5))
+                try? await Task.sleep(nanoseconds: 200_000_000)
+            }
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            m.debugAppend("对方", "好的。那你在这个项目里具体负责哪一部分？")
+            m.debugAppend("对方", "遇到的最大困难是什么，怎么解决的？")
+            m.ask()
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            print("SUMMARY-LEN \(m.meetingSummary.count)"); fflush(stdout)
             exit(0)
         }
         RunLoop.main.run()

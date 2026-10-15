@@ -9,6 +9,8 @@ macOS 原生小工具：在会议、面试、导师交流中，**实时捕获系
 - **多种 AI**：OpenAI 兼容接口（OpenAI、DeepSeek、OpenRouter、本机 Ollama 等）和 Anthropic Claude。
 - **自定义提示词**：全局系统提示词 + 任意数量的预设（内置：实时回答、速记要点、追问建议、屏幕解读、会后总结）。
 - **屏幕解读**：提问时可附带当前屏幕截图，答案旁显示本次使用的截图；可选择截取哪块屏幕。
+- **智能上下文**：以对方最近一段连续发言为“当前这一轮”完整发送，更早的对话由后台压缩成摘要，再加最近问答和你填写的会议背景，回答又快又不丢上下文。详见 [MANUAL.md](MANUAL.md) 第 6 节。
+- **连续追问**：每次提问会带上最近 2 次问答（只带提问摘要和回答，不重复发转写），追问时模型能前后一致；设置里可调（0 = 不带），话题切换时点底部「新话题」。
 - **自动回答**：检测到对方提问时自动触发。
 - **只读且安全**：见下文「安全设计」。
 
@@ -16,8 +18,17 @@ macOS 原生小工具：在会议、面试、导师交流中，**实时捕获系
 macOS 14 及以上；Apple 芯片体验最佳。从源码构建需要 Xcode 或 Swift 工具链。
 
 ## 安装
+
+### 方式一：下载 DMG（推荐）
+1. 到 [Releases](../../releases) 下载 `MeetingCopilot-x.y.z.dmg`，打开后把 MeetingCopilot 拖到「应用程序」。
+2. 本应用使用自签名证书、没有经过 Apple 公证，首次打开会被 macOS 拦截。处理方法二选一：
+   - 在「应用程序」里**右键 MeetingCopilot › 打开 › 打开**；
+   - 或在终端执行：`xattr -dr com.apple.quarantine /Applications/MeetingCopilot.app`
+3. 想自行确认代码再使用，请用方式二从源码构建。
+
+### 方式二：从源码构建
 ```bash
-git clone git@github.com:RainDayDream/MeetingCopilot.git
+git clone https://github.com/RainDayDream/MeetingCopilot.git
 cd MeetingCopilot
 ./create-signing-cert.sh   # 可选但推荐：创建本机固定签名证书，避免每次构建都要重新授权
 ./build.sh
@@ -30,7 +41,7 @@ open build/MeetingCopilot.app
 2. **授权**：点「开始监听」，在 系统设置 › 隐私与安全性 中允许「屏幕与系统音频录制」和「麦克风」。授权后**完全退出并重新打开**一次。
 3. **下载识别模型**：首次监听会联网下载 Whisper 模型（默认 small，约 460MB）并优化，需要 1–2 分钟，状态栏显示进度，之后离线可用。可在 设置 › 通用 换模型（tiny/base 更快，large-v3 turbo 最准但更吃资源）。
 
-## 日常使用
+## 日常使用（完整说明见 [MANUAL.md](MANUAL.md)）
 1. 开会前点相机图标，确认将被截取的屏幕；多显示器可在 设置 › 通用 固定选屏。
 2. 选好右上角**预设**，点「开始监听」。左侧实时显示转写（橙=对方，蓝=我）。
 3. 需要答案时点「立即回答」（⌘↩，或全局快捷键 ⌃⌥Space）；底部输入框可补充具体问题。

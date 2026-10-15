@@ -27,15 +27,37 @@ actor WhisperEngine {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("MeetingCopilot/models", isDirectory: true)
         try FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        onStatus("下载识别模型 \(model)…（首次需要，请保持联网）")
-        let folder = try await WhisperKit.download(variant: model, downloadBase: base) { p in
-            onStatus("下载识别模型 \(Int(p.fractionCompleted * 100))%")
+        // 本地已有完整模型就不联网：WhisperKit.download 每次都会先访问网络校验，离线时会失败，界面也会一直显示“下载”
+        let folder: URL
+        if let local = Self.localModelFolder(base: base, variant: model) {
+            folder = local
+            onStatus("加载本地识别模型…")
+        } else {
+            onStatus("下载识别模型 \(model)…（首次需要，请保持联网）")
+            folder = try await WhisperKit.download(variant: model, downloadBase: base) { p in
+                onStatus("下载识别模型 \(Int(p.fractionCompleted * 100))%")
+            }
+            onStatus("加载识别模型…（首次约需 1–2 分钟优化）")
         }
-        onStatus("加载识别模型…（首次约需 1–2 分钟优化）")
         kit = try await WhisperKit(WhisperKitConfig(model: model, downloadBase: base, modelFolder: folder.path,
                                                     verbose: false, logLevel: .error,
                                                     prewarm: true, load: true, download: false))
         loadedModel = model
+    }
+
+    /// 在 models/argmaxinc/whisperkit-coreml/ 下找已下载完整的模型目录（名称以 variant 结尾）
+    private static func localModelFolder(base: URL, variant: String) -> URL? {
+        let root = base.appendingPathComponent("models/argmaxinc/whisperkit-coreml", isDirectory: true)
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: root.path) else { return nil }
+        let wanted = ["AudioEncoder.mlmodelc", "MelSpectrogram.mlmodelc", "TextDecoder.mlmodelc"]
+        for n in names where n == variant || n.hasSuffix("_" + variant) || n.hasSuffix("-" + variant) {
+            let dir = root.appendingPathComponent(n, isDirectory: true)
+            let ok = wanted.allSatisfy {
+                FileManager.default.fileExists(atPath: dir.appendingPathComponent($0 + "/coremldata.bin").path)
+            }
+            if ok { return dir }
+        }
+        return nil
     }
 
     func transcribe(_ samples: [Float]) async throws -> String {
