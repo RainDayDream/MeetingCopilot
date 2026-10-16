@@ -224,4 +224,29 @@ struct TurnDetectorTests {
         b.advance(by: 10)
         #expect(abs(b.asks[0].time.timeIntervalSince(t1) - 1.55) < 0.06)
     }
+
+    // MARK: 麦克风持续有声（确认我在说话）
+
+    /// 对方那一路已经安静：确认是我在说话 → 取消待触发；对方那一路刚有声（可能是外放回声）→ 不处理
+    @Test func meSpeakingRequiresQuietSystemChannel() {
+        let d = TurnDetector()
+        #expect(d.onMeSpeaking(systemSilentFor: 0.1) == .none)
+        #expect(d.onMeSpeaking(systemSilentFor: 0.4) == .none)
+        #expect(d.onMeSpeaking(systemSilentFor: 0.9) == .cancel)
+        #expect(d.onMeSpeaking(systemSilentFor: .infinity) == .cancel)
+    }
+
+    /// 我在对方说完之后已经开口，但识别结果更晚到：对方这句话定稿时不再安排触发
+    @Test func meSpeakingBeforePreviousFinalSuppressesSchedule() {
+        let base = Date(timeIntervalSince1970: 1000)
+        var now = base
+        let d = TurnDetector(clock: { now })
+        var lines: [TranscriptLine] = []
+        TranscriptOps.apply(&lines, speaker: "对方", segment: 1, start: base, text: "你能介绍一下你的项目吗？", isFinal: true)
+        now = base.addingTimeInterval(1.1)
+        #expect(d.onMeSpeaking(systemSilentFor: 1.0) == .cancel)
+        now = base.addingTimeInterval(1.5)
+        let a = d.onUpdate(lines: lines, speaker: "对方", text: "你能介绍一下你的项目吗？", isFinal: true, end: base, autoEnabled: true, sensitivity: nil)
+        #expect(a == .cancel)
+    }
 }

@@ -140,9 +140,10 @@ final class AppModel: ObservableObject {
             return
         }
         if settings.captureMic, await Permissions.microphone() {
-            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6)
+            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6, sustainedSecs: 0.8)
             mt.onUpdate = { [weak self] u in Task { @MainActor in self?.handle("我", u) } }
             mt.onError = { [weak self] e in Task { @MainActor in self?.recogError = e } }
+            mt.onSpeechSustained = { [weak self] in Task { @MainActor in self?.meSpeaking() } }
             mt.start()
             micTr = mt
             let micCap = MicCapture()
@@ -208,6 +209,11 @@ final class AppModel: ObservableObject {
     /// VAD 检测到某一路开始出现语音：对方重新开口就立刻取消待触发（比识别结果早 2 秒以上）
     private func speechStarted(_ speaker: String) {
         perform(detector.onSpeechStart(speaker: speaker))
+    }
+
+    /// 麦克风持续有声：确认我在说话（对方那一路已安静）就取消待触发，不打扰
+    private func meSpeaking() {
+        perform(detector.onMeSpeaking(systemSilentFor: sysTr?.secondsSinceVoice() ?? .infinity))
     }
 
     private func perform(_ action: TurnDetector.Action) {

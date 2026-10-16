@@ -10,7 +10,9 @@ import Testing
 struct EvalEarlySignalTests {
     static let vadLatency = 0.2   // 一个音频块 + 切句余量
 
-    enum Item { case upd(Upd), start(Double), empty(Double) }
+    static let meSustainedSecs = 0.8
+
+    enum Item { case upd(Upd), start(Double), empty(Double), me(Double) }
 
     final class EarlySim {
         var now: Date
@@ -52,7 +54,7 @@ struct EvalEarlySignalTests {
         }
     }
 
-    static func run(_ d: EvalDialog) -> [Double] {
+    static func run(_ d: EvalDialog, meSignal: Bool) -> [Double] {
         var items: [(Double, Int, Item)] = []
         var seq = 0
         func add(_ t: Double, _ i: Item) { seq += 1; items.append((t, seq, i)) }
@@ -61,6 +63,17 @@ struct EvalEarlySignalTests {
             add(e.start + vadLatency, .start(e.start))
             let dropped = (e.end - e.start) < ASRTiming.sysMinSpeech || WhisperEngine.clean(e.text).isEmpty
             if dropped { add(e.end + ASRTiming.vadSilence, .empty(e.end)) }
+        }
+        if meSignal {
+            // 麦克风通道（含最坏情况下被识别的外放回声）持续有声 0.8 秒时通知；systemSilentFor = 对方那一路已安静多久
+            for e in d.events where e.speaker == "我" && (e.end - e.start) >= meSustainedSecs {
+                let t = e.start + meSustainedSecs + 0.1
+                var silent = Double.infinity
+                for o in d.events where o.speaker == "对方" && o.kind == "speech" && o.start <= t {
+                    silent = min(silent, o.end >= t ? 0 : t - o.end)
+                }
+                add(t, .me(silent))
+            }
         }
         items.sort { ($0.0, $0.1) < ($1.0, $1.1) }
         let base = Date(timeIntervalSince1970: 2_000_000)
@@ -71,6 +84,7 @@ struct EvalEarlySignalTests {
             case .upd(let u): sim.update(u, base: base)
             case .start: sim.apply(sim.detector.onSpeechStart(speaker: "对方"))
             case .empty: sim.apply(sim.detector.onEmptyFinal(lines: sim.lines, speaker: "对方", autoEnabled: true, sensitivity: nil))
+            case .me(let silent): sim.apply(sim.detector.onMeSpeaking(systemSilentFor: silent))
             }
         }
         sim.advance(to: base.addingTimeInterval((items.last?.0 ?? 0) + 15))
@@ -78,20 +92,24 @@ struct EvalEarlySignalTests {
     }
 
     @Test func earlySignalEval() throws {
-        var all = EvalMetrics.TriggerStats()
-        var byCat: [String: EvalMetrics.TriggerStats] = [:]
-        for d in try EvalData.loadDialogs() {
-            let s = EvalMetrics.scoreTriggers(Self.run(d), d.expected)
-            all.add(s); byCat[d.category, default: EvalMetrics.TriggerStats()].add(s)
+        var results: [String: Any] = [:]
+        for (name, me) in [("vad_start", false), ("vad_start_plus_me_speaking", true)] {
+            var all = EvalMetrics.TriggerStats()
+            var byCat: [String: EvalMetrics.TriggerStats] = [:]
+            for d in try EvalData.loadDialogs() {
+                let s = EvalMetrics.scoreTriggers(Self.run(d, meSignal: me), d.expected)
+                all.add(s); byCat[d.category, default: EvalMetrics.TriggerStats()].add(s)
+            }
+            var out = EvalTriggerTests.summarize(all)
+            out["by_category"] = Dictionary(uniqueKeysWithValues: byCat.map { ($0.key, EvalTriggerTests.summarize($0.value)) })
+            results[name] = out
+            func p(_ k: String) -> String { (out[k] as? Double).map { String(format: "%.1f%%", $0 * 100) } ?? "-" }
+            print("[early-signal] \(name): 抢答 \(p("premature_rate"))  漏答 \(p("miss_rate"))  误答 \(p("false_answer_rate"))  重复 \(all.duplicates)  P95 \(String(format: "%.2f", out["latency_p95_s"] as? Double ?? 0))")
+            for (c, v) in byCat.sorted(by: { $0.key < $1.key }) where ["me_interrupt", "echo", "chitchat"].contains(c) {
+                print("[early-signal]   \(c): 抢答 \(v.premature)/\(v.shouldAnswer) 漏答 \(v.miss)/\(v.shouldAnswer) 误答 \(v.falseAnswer)/\(v.nonQuestions)")
+            }
         }
-        var out = EvalTriggerTests.summarize(all)
-        out["by_category"] = Dictionary(uniqueKeysWithValues: byCat.map { ($0.key, EvalTriggerTests.summarize($0.value)) })
-        out["note"] = "含 VAD 语音起始早期信号的扩展回放（vad_latency=0.2s）；正式指标仍以冻结评测为准"
-        try EvalData.writePartial("trigger_early", out)
-        func p(_ k: String) -> String { (out[k] as? Double).map { String(format: "%.1f%%", $0 * 100) } ?? "-" }
-        print("[early-signal] 抢答 \(p("premature_rate"))  漏答 \(p("miss_rate"))  误答 \(p("false_answer_rate"))  重复 \(all.duplicates)  P95 \(out["latency_p95_s"] ?? "-")")
-        for (c, v) in byCat.sorted(by: { $0.key < $1.key }) {
-            print("[early-signal]   \(c): 抢答 \(v.premature)/\(v.shouldAnswer) 漏答 \(v.miss)/\(v.shouldAnswer) 误答 \(v.falseAnswer)/\(v.nonQuestions) 重复 \(v.duplicates)")
-        }
+        results["note"] = "扩展回放：VAD 语音起始信号（延迟 0.2s）；再加“我持续有声 0.8s”信号。正式指标仍以冻结评测为准"
+        try EvalData.writePartial("trigger_early", results)
     }
 }

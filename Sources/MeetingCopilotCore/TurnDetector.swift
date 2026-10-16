@@ -19,6 +19,8 @@ public final class TurnDetector {
     /// 最近一次 VAD 检测到对方开始出现语音的时刻，以及最近一个定稿句子的说完时刻
     private var lastSpeechStart: Date?
     private var lastEnd: Date?
+    /// 最近一次确认“我真的在说话”的时刻（VAD 持续有声，且当时对方这一路已经安静）
+    private var lastMeSpeaking: Date?
 
     public init(clock: @escaping () -> Date = Date.init) {
         self.clock = clock
@@ -38,6 +40,8 @@ public final class TurnDetector {
             // 这句话说完之后，VAD 已经检测到对方又开口了（识别结果比 VAD 晚到 1.5 秒以上）：这一轮还没说完，先不触发，
             // 等新这段话的识别结果（或确认它只是噪声）再判断
             if let s = lastSpeechStart, s > end { return .cancel }
+            // 这句话说完之后我已经在说话了（识别结果比 VAD 晚到）：不打扰
+            if let m = lastMeSpeaking, m > end { return .cancel }
             return schedule(lines: lines, end: end, sensitivity: sensitivity)
         }
         // 我开口回应（一段超过 6 个字的话）→ 取消；但外放回声（对方刚说过的话在我的通道重复出现）不算
@@ -49,6 +53,14 @@ public final class TurnDetector {
     public func onSpeechStart(speaker: String) -> Action {
         guard speaker == "对方" else { return .none }
         lastSpeechStart = clock()
+        return .cancel
+    }
+
+    /// 麦克风通道持续有声（我真的在说话）。systemSilentFor：对方那一路已经安静了多久——外放时对方的声音会被麦克风收进来，
+    /// 只有对方已经安静一会儿，才能确定是我在说话而不是回声。确认后立即取消待触发。
+    public func onMeSpeaking(systemSilentFor: TimeInterval) -> Action {
+        guard systemSilentFor > 0.4 else { return .none }
+        lastMeSpeaking = clock()
         return .cancel
     }
 
@@ -100,7 +112,7 @@ public final class TurnDetector {
         if let t = TurnSplitter.currentTurn(lines) { lastAutoKey = t.lastID }
     }
 
-    public func reset() { lastAutoKey = nil; lastSpeechStart = nil; lastEnd = nil }
+    public func reset() { lastAutoKey = nil; lastSpeechStart = nil; lastEnd = nil; lastMeSpeaking = nil }
 }
 
 /// 外放时，对方的话会被麦克风重新收进“我”的通道。用字符二元组重合度判断一句“我”的话是不是对方刚说过的话。

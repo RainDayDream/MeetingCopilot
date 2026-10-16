@@ -149,6 +149,8 @@ public final class WhisperStream {
     public var onError: ((String) -> Void)?
     /// 一段新的语音刚开始（VAD 检测到声音）：比识别结果早 2 秒以上，用于“对方又开口了”的及时判断
     public var onSpeechStart: (() -> Void)?
+    /// 同一段语音累计有声时间达到 sustainedSecs（构造时指定）时通知一次：用于确认“我真的在说话”（而不是一个噪声点）
+    public var onSpeechSustained: (() -> Void)?
 
     private let q: DispatchQueue
     private let resampler = Resampler()
@@ -167,10 +169,14 @@ public final class WhisperStream {
     private let rate = 16000
     private let voiceThreshold: Float
     private let minSpeech: Double
+    private let sustainedSecs: Double?
+    private var sustainedFired = false
+    private var lastVoiced: Date?
 
     /// 麦克风底噪/键盘声更多，阈值更高；系统音频较干净
-    public init(speaker: String, voiceThreshold: Float = 0.008, minSpeech: Double = 0.3) {
+    public init(speaker: String, voiceThreshold: Float = 0.008, minSpeech: Double = 0.3, sustainedSecs: Double? = nil) {
         self.speaker = speaker
+        self.sustainedSecs = sustainedSecs
         self.voiceThreshold = voiceThreshold
         self.minSpeech = minSpeech
         q = DispatchQueue(label: "mc.whisper.\(speaker)")
@@ -202,9 +208,12 @@ public final class WhisperStream {
             if !inSpeech {
                 inSpeech = true; seg = pre; pre = []
                 segID += 1; segStart = Date(); lastPartial = Date()
+                sustainedFired = false
                 onSpeechStart?()
             }
             seg += s; silence = 0; speechSecs += dur
+            lastVoiced = Date()
+            if let n = sustainedSecs, !sustainedFired, speechSecs >= n { sustainedFired = true; onSpeechSustained?() }
         } else if inSpeech {
             seg += s; silence += dur
             if silence >= 0.8 { finalize(); return }
@@ -215,6 +224,11 @@ public final class WhisperStream {
         guard inSpeech else { return }
         if seg.count >= rate * 25 { finalize(); return }
         if !partialBusy, seg.count >= rate, Date().timeIntervalSince(lastPartial) > 2 { partial() }
+    }
+
+    /// 距离这一路最近一次检测到声音过去了多久（从没有声音返回无穷大）。用于区分“我在说话”和“对方的回声”。
+    public func secondsSinceVoice() -> TimeInterval {
+        q.sync { lastVoiced.map { Date().timeIntervalSince($0) } ?? .infinity }
     }
 
     /// 等到所有正在进行的识别任务都完成（评测/测试用，不影响正常运行）

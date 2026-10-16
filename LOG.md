@@ -47,6 +47,13 @@
 - 局限：这条规则是看了 long_technical 类的失败后加的，数据集是我合成的，0.0% 偏乐观；没有线索词表覆盖到的真实提问（例如只说“你的优势。”）会被多等 1 秒。
 - 测试：`cueLessStatementWaitsOneExtraSecond`。
 
+### 尝试 8：确认“我在说话”的早期信号（麦克风持续有声 0.8 s，且对方那一路已安静）—— 采用（提交；需人工验证）
+- 问题：我在问题说完 0.2–0.6 s 内就开口时，识别结果要到 ~1.5 s 才到，系统此时仍会触发（me_interrupt 误答 5/5）。
+- 改动（产品）：`WhisperStream(sustainedSecs:)` + `onSpeechSustained`（同一段语音累计有声达 0.8 s 时通知一次）、`secondsSinceVoice()`；`TurnDetector.onMeSpeaking(systemSilentFor:)`：只有对方那一路已安静 > 0.4 s 才确认是“我在说话”（外放回声只会在对方正在说话时出现，所以不会被误当成我），确认后取消待触发，并且之后到达的、早于我开口的对方定稿句也不再触发。0.8 s 的取值是为了避开键盘声：噪声簇累计有声时间 < 0.5 s。
+- 效果（扩展评测，含 VAD 起始信号）：误答率 25.0% → **5.0%**（me_interrupt 5/5 → 1/5；剩下那条是我在对方问题说到一半时插话，与外放回声无法区分，规则上不处理）；抢答 0.0%、漏答 0、echo 类漏答仍 0（回声信号被正确忽略）、P95 1.55 s 不变。正式（冻结）评测没有这些信号，指标不变。
+- 风险 / 需人工验证：① 真实麦克风下“持续有声 0.8 s”是否会被环境噪声/电流声误触发（误触发后果是漏答，因为待触发被取消）；② `secondsSinceVoice` 的 0.4 s 阈值在真实外放（房间混响 > 0.4 s）下可能把尾音当成我在说话；③ AppModel 的接线只有编译验证，没有真实麦克风验证。
+- 测试：`meSpeakingRequiresQuietSystemChannel`、`meSpeakingBeforePreviousFinalSuppressesSchedule`。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**
