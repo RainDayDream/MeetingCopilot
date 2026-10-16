@@ -105,4 +105,24 @@ struct TurnDetectorTests {
         sim.advance(by: 0.6)
         #expect(sim.asks.count == 1)   // 距上次 < 1.5s，被拦截
     }
+
+    /// 外放回声：对方的话在“我”通道重复出现，不应被当成我在回应而取消触发
+    @Test func echoInMicChannelDoesNotCancel() {
+        let sim = Sim()
+        sim.update("对方", "你能介绍一下你的项目吗？")
+        sim.advance(by: 0.1)
+        sim.update("我", "你能介绍一下你的项目吗？")
+        sim.advance(by: 3)
+        #expect(sim.asks.count == 1)
+    }
+
+    /// 我真的在回应（内容与对方的话不同）仍然取消
+    @Test func genuineReplyStillCancelsWithEchoGuard() {
+        let sim = Sim()
+        sim.update("对方", "你能介绍一下你的项目吗？")
+        sim.advance(by: 0.1)
+        sim.update("我", "可以，我先讲一下整体架构吧。")
+        sim.advance(by: 3)
+        #expect(sim.asks.isEmpty)
+    }
 }

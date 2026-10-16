@@ -33,8 +33,8 @@ public final class TurnDetector {
             guard isFinal, autoEnabled else { return .cancel }
             return schedule(lines: lines, end: end, sensitivity: sensitivity)
         }
-        // 我开口回应（一段超过 6 个字的话）→ 取消
-        return text.count >= 6 ? .cancel : .none
+        // 我开口回应（一段超过 6 个字的话）→ 取消；但外放回声（对方刚说过的话在我的通道重复出现）不算
+        return text.count >= 6 && !EchoGuard.isEcho(text, lines: lines, now: clock()) ? .cancel : .none
     }
 
     /// 以“说完的时刻”为起点等待一小段静音：句末有问号 → 很快触发；句号等完整句 → 按灵敏度等待；
@@ -57,7 +57,9 @@ public final class TurnDetector {
               !lines.contains(where: { $0.speaker == "对方" && $0.isPartial }),
               clock().timeIntervalSince(lastAuto) > 1.5 else { return false }
         // 我已经开始回应了：不打扰
-        if let mine = lines.last(where: { $0.speaker == "我" && $0.text.count >= 6 }), mine.time >= turn.lastTime { return false }
+        let now = clock()
+        if let mine = lines.last(where: { $0.speaker == "我" && $0.text.count >= 6 && !EchoGuard.isEcho($0.text, lines: lines, now: now) }),
+           mine.time >= turn.lastTime { return false }
         lastAutoKey = key
         lastAuto = clock()
         return true
@@ -69,4 +71,23 @@ public final class TurnDetector {
     }
 
     public func reset() { lastAutoKey = nil }
+}
+
+/// 外放时，对方的话会被麦克风重新收进“我”的通道。用字符二元组重合度判断一句“我”的话是不是对方刚说过的话。
+public enum EchoGuard {
+    static func bigrams(_ s: String) -> Set<String> {
+        let c = Array(s.lowercased()).filter { $0.isLetter || $0.isNumber }
+        guard c.count >= 2 else { return Set(c.map { String($0) }) }
+        return Set((0..<(c.count - 1)).map { String(c[$0...$0 + 1]) })
+    }
+
+    /// text 的二元组至少 60% 出现在最近 20 秒内对方说过的话里 → 视为回声
+    public static func isEcho(_ text: String, lines: [TranscriptLine], now: Date) -> Bool {
+        let mine = bigrams(text)
+        guard mine.count >= 3 else { return false }
+        var theirs = Set<String>()
+        for l in lines where l.speaker == "对方" && now.timeIntervalSince(l.time) < 20 { theirs.formUnion(bigrams(l.text)) }
+        guard !theirs.isEmpty else { return false }
+        return Double(mine.filter { theirs.contains($0) }.count) / Double(mine.count) >= 0.6
+    }
 }
