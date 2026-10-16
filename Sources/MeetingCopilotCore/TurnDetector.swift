@@ -49,7 +49,7 @@ public final class TurnDetector {
         // 句末是逗号/省略号/语气词/连接词：对方几乎一定还要接着说。识别结果最晚要在对方重新开口 2.7 秒后才到达，
         // 所以等待必须明显更长，才有机会在触发前收到“对方又开口了”的信号
         case .hesitation: wait = base + 4.5
-        case .open: wait = base + 2.5      // 没有句末标点，大概率没说完
+        case .open: wait = base + 3.0      // 没有句末标点，大概率没说完
         }
         // 语音识别本身已耗时，从实际说完的时刻算起
         let delay = max(0.05, wait - clock().timeIntervalSince(end))

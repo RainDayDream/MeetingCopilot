@@ -47,14 +47,14 @@ struct TurnDetectorTests {
         }
     }
 
-    /// 没有句末标点（识别没给出标点）：大概率没说完，等待 4 秒
-    @Test func noTerminalPunctuationWaitsFourSeconds() {
+    /// 没有句末标点（识别没给出标点）：大概率没说完，等待 4.5 秒
+    @Test func noTerminalPunctuationWaitsFourPointFive() {
         let sim = Sim()
         let t0 = sim.now
         sim.update("对方", "你能介绍一下你在这个项目里负责的模块")
         sim.advance(by: 10)
         #expect(sim.asks.count == 1)
-        #expect(abs(sim.asks[0].time.timeIntervalSince(t0) - 4.0) < 1e-6)
+        #expect(abs(sim.asks[0].time.timeIntervalSince(t0) - 4.5) < 1e-6)
     }
 
     @Test func tooShortTurnIsIgnored() {

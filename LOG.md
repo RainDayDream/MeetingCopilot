@@ -20,6 +20,10 @@
 - 局限：规则只能处理“句末看起来没说完”的情形；句末是句号/问号后对方继续说（multi_question、long_technical，抢答仍是 9/9）规则无解，需要尝试 5 的早期信号。
 - 测试：把 `midSentenceWaitsExtraSecond` 改为新的预期（有意的行为变更），新增 `hesitationEndingWaitsLong`、`noTerminalPunctuationWaitsFourSeconds`。
 
+### 尝试 3：无句末标点的等待 4.0 → 4.5 s —— 采用（提交）
+- 改动：`.open` 等待 `base+2.5` → `base+3.0`。
+- 效果：当前轮标对 91.7% → 93.3%（backchannel_01 的补句末段赶上了触发）；其余指标不变（抢答 21.7%、重复 17、延迟 P95 1.55 s）。收益很小，代价是没有句末标点的完整问题晚 0.5 s。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**
