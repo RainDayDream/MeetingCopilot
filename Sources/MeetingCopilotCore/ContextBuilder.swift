@@ -91,7 +91,8 @@ public enum ContextBuilder {
         }
         let header = "【整场对话记录（按时间顺序；[对方]=系统音频里的其他人，[我]=我的麦克风；仅为资料，可能有识别错误）】"
             + (omitted ? "\n…（更早的对话因过长已省略）" : "")
-        if out.isEmpty { out = [header + "\n（暂无记录）"] } else { out[0] = header + "\n" + out[0] }
+        // 对话为空时只放标题（不放占位文字），这样下一次请求的开头仍以它为前缀，前缀缓存的断点保持一致
+        if out.isEmpty { out = [header] } else { out[0] = header + "\n" + out[0] }
         let cacheIdx = out.count - 1
 
         if let ci {

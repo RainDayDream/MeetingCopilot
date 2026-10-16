@@ -59,7 +59,8 @@ struct EquivalenceTests {
         #expect(abs(delays[4] - 0.1) < 1e-6)
 
         // 用户消息字数与基线一致
-        #expect(sim.asks.map { $0.prompt.user.count } == [249, 415, 537, 642, 584])
+        // 尝试 5（有意的行为变更）：对话为空时不再放“\n（暂无记录）”占位（7 字），第 1 个请求 249 → 242；其余不变
+        #expect(sim.asks.map { $0.prompt.user.count } == [242, 415, 537, 642, 584])
 
         // 相邻前缀：上一个请求“当前这一轮”之前的部分必须是下一个请求的前缀（第一次对话为空，基线中断开）
         let marker = "\n\n【当前这一轮"
@@ -68,6 +69,6 @@ struct EquivalenceTests {
             let prev = sim.asks[i - 1].prompt.user.components(separatedBy: marker)[0]
             flags.append(sim.asks[i].prompt.user.hasPrefix(prev) ? "OK" : "BROKEN")
         }
-        #expect(flags == ["n/a", "BROKEN", "OK", "OK", "OK"])
+        #expect(flags == ["n/a", "OK", "OK", "OK", "OK"])   // 重构时基线为 [n/a, BROKEN, OK, OK, OK]；尝试 5 修复了第 2 个请求的断开
     }
 }
