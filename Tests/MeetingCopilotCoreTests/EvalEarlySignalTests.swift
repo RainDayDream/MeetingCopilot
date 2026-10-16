@@ -10,7 +10,8 @@ import Testing
 struct EvalEarlySignalTests {
     static let vadLatency = 0.2   // 一个音频块 + 切句余量
 
-    static let meSustainedSecs = 0.8
+    /// 实测（StreamSignalTests）：我开始说话后约 0.9–1.0 秒发出“持续有声”信号
+    static let meSustainedSecs = 1.0
 
     enum Item { case upd(Upd), start(Double), empty(Double), me(Double) }
 
@@ -70,9 +71,9 @@ struct EvalEarlySignalTests {
             if dropped { add(e.end + ASRTiming.vadSilence, .empty(e.end)) }
         }
         if meSignal {
-            // 麦克风通道（含最坏情况下被识别的外放回声）持续有声 0.8 秒时通知；systemSilentFor = 对方那一路已安静多久
+            // 麦克风通道（含最坏情况下被识别的外放回声）持续说话约 1.0 秒时通知；systemSilentFor = 对方那一路已安静多久
             for e in d.events where e.speaker == "我" && (e.end - e.start) >= meSustainedSecs {
-                let t = e.start + meSustainedSecs + 0.1
+                let t = e.start + meSustainedSecs
                 var silent = Double.infinity
                 for o in d.events where o.speaker == "对方" && o.kind == "speech" && o.start <= t {
                     silent = min(silent, o.end >= t ? 0 : t - o.end)
@@ -123,7 +124,7 @@ struct EvalEarlySignalTests {
                 print("[early-signal]   \(c): 抢答 \(v.premature)/\(v.shouldAnswer) 漏答 \(v.miss)/\(v.shouldAnswer) 误答 \(v.falseAnswer)/\(v.nonQuestions)")
             }
         }
-        results["note"] = "扩展回放：VAD 语音起始信号（延迟 0.2s）；再加“我持续有声 0.8s”信号。正式指标仍以冻结评测为准"
+        results["note"] = "扩展回放：VAD 语音起始信号（延迟 0.2s）；再加“我持续说话 ≈1.0s”信号。正式指标仍以冻结评测为准"
         try EvalData.writePartial("trigger_early", results)
     }
 }

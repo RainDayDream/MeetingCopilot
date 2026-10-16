@@ -140,7 +140,7 @@ final class AppModel: ObservableObject {
             return
         }
         if settings.captureMic, await Permissions.microphone() {
-            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6, sustainedSecs: 0.8)
+            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6, sustainedSecs: 0.5)
             mt.onUpdate = { [weak self] u in Task { @MainActor in self?.handle("我", u) } }
             mt.onError = { [weak self] e in Task { @MainActor in self?.recogError = e } }
             mt.onSpeechSustained = { [weak self] in Task { @MainActor in self?.meSpeaking() } }

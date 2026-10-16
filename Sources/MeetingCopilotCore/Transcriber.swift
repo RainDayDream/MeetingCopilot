@@ -149,7 +149,7 @@ public final class WhisperStream {
     public var onError: ((String) -> Void)?
     /// 一段新的语音刚开始（VAD 检测到声音）：比识别结果早 2 秒以上，用于“对方又开口了”的及时判断
     public var onSpeechStart: (() -> Void)?
-    /// 同一段语音累计有声时间达到 sustainedSecs（构造时指定）时通知一次：用于确认“我真的在说话”（而不是一个噪声点）
+    /// 最近 1 秒内有声时间累计达到 sustainedSecs（构造时指定，至少说了 0.8 秒）时通知一次：用于确认“我真的在持续说话”（而不是键盘敲击之类的噪声）
     public var onSpeechSustained: (() -> Void)?
 
     private let q: DispatchQueue
@@ -171,6 +171,7 @@ public final class WhisperStream {
     private let minSpeech: Double
     private let sustainedSecs: Double?
     private var sustainedFired = false
+    private var frames: [Bool] = []   // 最近 1 秒内每个 20ms 帧是否有声（不受采集缓冲区大小影响），只用于“持续有声”信号
     private var lastVoiced: Date?
 
     /// 麦克风底噪/键盘声更多，阈值更高；系统音频较干净
@@ -197,6 +198,22 @@ public final class WhisperStream {
         q.async { self.feed(s) }
     }
 
+    /// 一块音频按 20ms 切帧，每帧是否有声
+    static func frameFlags(_ s: [Float], threshold: Float) -> [Bool] {
+        let frame = 320
+        var out: [Bool] = [], i = 0
+        while i < s.count {
+            let j = min(i + frame, s.count)
+            if j - i >= frame / 2 {
+                var sum: Float = 0
+                for v in s[i..<j] { sum += v * v }
+                out.append((sum / Float(j - i)).squareRoot() > threshold)
+            }
+            i = j
+        }
+        return out
+    }
+
     private func feed(_ s: [Float]) {
         guard running else { return }
         let dur = Double(s.count) / Double(rate)
@@ -208,12 +225,20 @@ public final class WhisperStream {
             if !inSpeech {
                 inSpeech = true; seg = pre; pre = []
                 segID += 1; segStart = Date(); lastPartial = Date()
-                sustainedFired = false
+                sustainedFired = false; frames = []
                 onSpeechStart?()
             }
             seg += s; silence = 0; speechSecs += dur
             lastVoiced = Date()
-            if let n = sustainedSecs, !sustainedFired, speechSecs >= n { sustainedFired = true; onSpeechSustained?() }
+            // 持续有声：最近 1 秒（至少 0.8 秒）里有声的 20ms 帧累计 ≥ sustainedSecs。按帧统计才不受采集缓冲区大小影响；
+            // 用滑动窗口的“密度”而不是整段累计，连续说话（密度 ≥ 50%）会触发，断断续续的键盘敲击（密度 20–30%）不会
+            if let n = sustainedSecs, !sustainedFired {
+                for v in Self.frameFlags(s, threshold: voiceThreshold) {
+                    frames.append(v)
+                    if frames.count > 50 { frames.removeFirst() }
+                }
+                if frames.count >= 40, Double(frames.filter { $0 }.count) * 0.02 >= n { sustainedFired = true; onSpeechSustained?() }
+            }
         } else if inSpeech {
             seg += s; silence += dur
             if silence >= 0.8 { finalize(); return }
