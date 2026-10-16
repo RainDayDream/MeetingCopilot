@@ -138,4 +138,26 @@ struct TurnDetectorTests {
         sim.advance(by: 3)
         #expect(sim.asks.isEmpty)
     }
+
+    /// 寒暄/确认/评价/过渡：不触发；带提问或请求线索的仍触发（偏向召回）
+    @Test func acknowledgementsDoNotTriggerButRequestsDo() {
+        for (text, fires) in [("好的，我们开始吧。", false), ("嗯，你的简历我看过了，整体不错。", false), ("OK, that makes sense, thank you.", false),
+                              ("好，那我们进入下一个环节。", false), ("好的，那说说你最大的缺点。", true), ("嗯，你为什么选择我们？", true),
+                              ("Thanks. Could you describe your last project?", true), ("讲讲你的项目。", true), ("我们公司主要做推荐系统。", true)] {
+            let sim = Sim()
+            sim.update("对方", text)
+            sim.advance(by: 10)
+            #expect((sim.asks.count == 1) == fires, "\(text)")
+        }
+    }
+
+    /// 前一句是确认语、后一句补上请求：整轮文本带线索，应触发
+    @Test func ackFollowedByRequestInSameTurnTriggers() {
+        let sim = Sim()
+        sim.update("对方", "好的，不错。")
+        sim.advance(by: 1.0)
+        sim.update("对方", "那请你介绍一下这个项目的架构。")
+        sim.advance(by: 10)
+        #expect(sim.asks.count == 1)
+    }
 }

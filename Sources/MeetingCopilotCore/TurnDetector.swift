@@ -41,6 +41,8 @@ public final class TurnDetector {
     /// 句子没结束（逗号、半句）→ 多等 1 秒，避免对方只是在停顿思考时就被抢答。
     private func schedule(lines: [TranscriptLine], end: Date, sensitivity: Int?) -> Action {
         guard let turn = TurnSplitter.currentTurn(lines), turn.text.count >= 4, let last = turn.text.last else { return .cancel }
+        // 寒暄、确认、评价、过渡语（且没有提问/请求的线索）：不需要回答，不触发模型调用
+        guard ResponseCue.needsResponse(turn.text) else { return .cancel }
         let base = [0.8, 1.5, 2.5][min(max(sensitivity ?? 1, 0), 2)]
         let wait: Double
         switch Ending.classify(turn.text) {
@@ -115,5 +117,28 @@ enum Ending {
             return .open
         }
         return .sentence
+    }
+}
+
+/// 这一轮话是否需要“我”回应。偏向召回：只有明确是寒暄/确认/评价/过渡、并且没有任何提问或请求线索时，才判定不需要。
+enum ResponseCue {
+    static let cues: [String] = [
+        "?", "？", "吗", "什么", "怎么", "为什么", "为何", "如何", "哪", "多少", "几个", "谁", "是否", "能不能", "可不可以", "能否", "会不会",
+        "请你", "请问", "请讲", "请说", "请介绍", "请描述", "讲讲", "说说", "谈谈", "聊聊你", "介绍", "描述", "解释", "分析", "举例", "举个",
+        "说一下", "讲一下", "谈一下", "给我们讲", "告诉我", "想问", "想了解", "你觉得", "你认为", "你会", "有没有", "你有什么",
+        "what", "how", "why", "when", "where", "which", "who ", "could you", "can you", "would you", "do you", "did you", "have you",
+        "tell me", "walk me", "describe", "explain", "talk about", "please", "let me know", "any question", "your thoughts",
+    ]
+    static let ackStarts: [String] = [
+        "好的", "好，", "好。", "嗯", "不错", "行，", "对，", "对。", "明白", "了解", "清楚", "谢谢", "感谢", "辛苦", "你好", "您好", "欢迎",
+        "ok", "okay", "great", "good", "nice", "thanks", "thank you", "i see", "alright", "got it", "right,", "interesting", "hi", "hello", "welcome",
+    ]
+    static let transitions: [String] = ["进入下一", "下一个环节", "下一个问题", "今天就到这里", "就到这里", "我们开始", "开始吧", "that's all", "that is all", "let's move on", "moving on"]
+
+    static func needsResponse(_ text: String) -> Bool {
+        let t = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if cues.contains(where: { t.contains($0) }) { return true }
+        let ack = ackStarts.contains(where: { t.hasPrefix($0) }) || transitions.contains(where: { t.contains($0) })
+        return !ack
     }
 }
