@@ -35,6 +35,12 @@
 - 效果：前缀稳定率 76.7% → **100%**；平均提示词字数 523 → 501；其余不变。
 - 有意的行为变更：`EquivalenceTests` 的旧基线随之更新（第 1 个请求 249 → 242 字，相邻前缀 `[n/a, BROKEN, OK, OK, OK]` → `[n/a, OK, OK, OK, OK]`），测试里注明了原因；重构时的基线数字保留在本日志“评测基础设施搭建”一节。
 
+### 尝试 6：VAD“语音起始”早期信号 —— 采用（提交；正式评测看不到收益，扩展评测显示抢答 21.7% → 3.3%）
+- 改动（产品）：`WhisperStream.onSpeechStart`（VAD 一检测到声音就通知，比识别结果早 2 秒以上）→ `TurnDetector.onSpeechStart`：对方重新开口立刻取消待触发。两个细节：① 识别结果比 VAD 晚 1.5 s 以上到达，所以“上一句定稿时，VAD 已经检测到对方又开口了”也不安排触发（否则抢答照旧，第一版就是这个 bug：扩展评测只从 21.7% 降到 20.0%）；② 对方的这段声音如果最终没有文字（噪声/过短/被幻觉过滤），`onEmptyFinal` 按最近定稿句子的说完时刻把触发重新安排回来（只要这一轮还没触发过），避免漏答。AppModel 接好了这两个信号。
+- 评测：冻结的评测时序模型里“对方又开口”只能来自识别结果，没有这个信号，所以正式指标不变（抢答 21.7%）。我**没有改冻结的评测**，而是新增扩展评测 `EvalEarlySignalTests`（同数据集、同指标函数，回放里额外加入 VAD 信号，延迟 0.2 s）：抢答 21.7% → **3.3%**（2/60，剩 long_technical：句间停顿 1.9 s 超过完整句的 1.55 s 触发点），重复 17 → **2**，漏答仍 0，误答 25.0%、P95 1.55 s 不变。结果写在 `eval/results/.partial/trigger_early.json`。
+- 需人工验证 / 需人工确认：① 真实环境里 VAD 起始信号的延迟与误触发（系统音频里的提示音、音乐会取消待触发，靠 `onEmptyFinal` 兜底，兜底只在这段声音结束后才生效）；② 评测应否把“语音起始信号”纳入时序模型并重新冻结（见 STATUS 的需人工确认）。
+- 测试：`speechStartCancelsPendingImmediately`、`myspeechStartIsIgnored`、`noiseAfterSpeechStartRearmsTrigger`、`speechStartedBeforePreviousFinalSuppressesSchedule`。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**

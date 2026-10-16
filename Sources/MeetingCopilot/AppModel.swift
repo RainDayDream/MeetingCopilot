@@ -124,6 +124,7 @@ final class AppModel: ObservableObject {
         let st = WhisperStream(speaker: "对方")
         st.onUpdate = { [weak self] u in Task { @MainActor in self?.handle("对方", u) } }
         st.onError = { [weak self] e in Task { @MainActor in self?.recogError = e } }
+        st.onSpeechStart = { [weak self] in Task { @MainActor in self?.speechStarted("对方") } }
         st.start()
         sysTr = st
         do {
@@ -190,12 +191,26 @@ final class AppModel: ObservableObject {
     }
 
     private func handle(_ speaker: String, _ u: SegmentUpdate) {
-        guard TranscriptOps.apply(&lines, speaker: speaker, segment: u.id, start: u.start, text: u.text, isFinal: u.isFinal) else { return }
+        guard TranscriptOps.apply(&lines, speaker: speaker, segment: u.id, start: u.start, text: u.text, isFinal: u.isFinal) else {
+            // 一段声音结束但没有文字：如果之前因它取消了待触发，重新安排（否则会漏答）
+            if u.isFinal {
+                perform(detector.onEmptyFinal(lines: lines, speaker: speaker, autoEnabled: autoEnabled, sensitivity: settings.autoSensitivity))
+            }
+            return
+        }
         // 自动回答：由 TurnDetector 判断是取消等待、重新安排，还是不处理
-        let action = detector.onUpdate(lines: lines, speaker: speaker, text: u.text.trimmingCharacters(in: .whitespacesAndNewlines),
-                                       isFinal: u.isFinal, end: u.end,
-                                       autoEnabled: settings.autoAnswer && (isListening || debugAuto),
-                                       sensitivity: settings.autoSensitivity)
+        perform(detector.onUpdate(lines: lines, speaker: speaker, text: u.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                                  isFinal: u.isFinal, end: u.end, autoEnabled: autoEnabled, sensitivity: settings.autoSensitivity))
+    }
+
+    private var autoEnabled: Bool { settings.autoAnswer && (isListening || debugAuto) }
+
+    /// VAD 检测到某一路开始出现语音：对方重新开口就立刻取消待触发（比识别结果早 2 秒以上）
+    private func speechStarted(_ speaker: String) {
+        perform(detector.onSpeechStart(speaker: speaker))
+    }
+
+    private func perform(_ action: TurnDetector.Action) {
         switch action {
         case .none: break
         case .cancel: autoTask?.cancel(); autoTask = nil

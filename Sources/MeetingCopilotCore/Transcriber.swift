@@ -147,6 +147,8 @@ public final class WhisperStream {
     public let speaker: String
     public var onUpdate: ((SegmentUpdate) -> Void)?
     public var onError: ((String) -> Void)?
+    /// 一段新的语音刚开始（VAD 检测到声音）：比识别结果早 2 秒以上，用于“对方又开口了”的及时判断
+    public var onSpeechStart: (() -> Void)?
 
     private let q: DispatchQueue
     private let resampler = Resampler()
@@ -200,6 +202,7 @@ public final class WhisperStream {
             if !inSpeech {
                 inSpeech = true; seg = pre; pre = []
                 segID += 1; segStart = Date(); lastPartial = Date()
+                onSpeechStart?()
             }
             seg += s; silence = 0; speechSecs += dur
         } else if inSpeech {

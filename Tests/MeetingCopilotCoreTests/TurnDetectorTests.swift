@@ -160,4 +160,56 @@ struct TurnDetectorTests {
         sim.advance(by: 10)
         #expect(sim.asks.count == 1)
     }
+
+    // MARK: VAD 语音起始早期信号
+
+    /// 对方重新开口的 VAD 信号立刻取消待触发（不必等识别结果）
+    @Test func speechStartCancelsPendingImmediately() {
+        let base = Date(timeIntervalSince1970: 1000)
+        let d = TurnDetector(clock: { base })
+        var lines: [TranscriptLine] = []
+        TranscriptOps.apply(&lines, speaker: "对方", segment: 1, start: base, text: "我们先看一下这个方案。", isFinal: true)
+        let a = d.onUpdate(lines: lines, speaker: "对方", text: "我们先看一下这个方案。", isFinal: true, end: base, autoEnabled: true, sensitivity: nil)
+        guard case .schedule = a else { Issue.record("应安排触发"); return }
+        #expect(d.onSpeechStart(speaker: "对方") == .cancel)
+    }
+
+    /// 我的语音起始不影响对方的待触发（麦克风里可能是噪声/回声）
+    @Test func myspeechStartIsIgnored() {
+        let d = TurnDetector()
+        #expect(d.onSpeechStart(speaker: "我") == .none)
+    }
+
+    /// 对方的这段声音最终没有文字（噪声）：必须把触发重新安排回来，否则漏答
+    @Test func noiseAfterSpeechStartRearmsTrigger() {
+        let base = Date(timeIntervalSince1970: 1000)
+        var now = base
+        let d = TurnDetector(clock: { now })
+        var lines: [TranscriptLine] = []
+        TranscriptOps.apply(&lines, speaker: "对方", segment: 1, start: base, text: "你能介绍一下你的项目吗？", isFinal: true)
+        _ = d.onUpdate(lines: lines, speaker: "对方", text: "你能介绍一下你的项目吗？", isFinal: true, end: base, autoEnabled: true, sensitivity: nil)
+        now = base.addingTimeInterval(0.3)
+        #expect(d.onSpeechStart(speaker: "对方") == .cancel)
+        now = base.addingTimeInterval(1.5)
+        let a = d.onEmptyFinal(lines: lines, speaker: "对方", autoEnabled: true, sensitivity: nil)
+        guard case .schedule(let delay, _) = a else { Issue.record("没有重新安排"); return }
+        #expect(delay > 0 && delay < 0.2)       // 已超过原定等待，几乎立即触发
+        // 这一轮已经触发过：再来空结果不重复安排
+        if case .schedule(_, let key) = a { #expect(d.shouldFire(key: key, lines: lines)) }
+        #expect(d.onEmptyFinal(lines: lines, speaker: "对方", autoEnabled: true, sensitivity: nil) == .none)
+    }
+
+    /// 对方说完上一句后很快又开口：VAD 信号早于上一句的识别结果到达，上一句定稿时不能再安排触发
+    @Test func speechStartedBeforePreviousFinalSuppressesSchedule() {
+        let base = Date(timeIntervalSince1970: 1000)
+        var now = base
+        let d = TurnDetector(clock: { now })
+        var lines: [TranscriptLine] = []
+        TranscriptOps.apply(&lines, speaker: "对方", segment: 1, start: base, text: "你能介绍一下你的项目吗？", isFinal: true)
+        now = base.addingTimeInterval(1.2)                  // 上一句 0 秒说完，1.0 秒后对方又开口，VAD 信号 1.2 秒到
+        #expect(d.onSpeechStart(speaker: "对方") == .cancel)
+        now = base.addingTimeInterval(1.5)                  // 上一句的识别结果此时才到
+        let a = d.onUpdate(lines: lines, speaker: "对方", text: "你能介绍一下你的项目吗？", isFinal: true, end: base, autoEnabled: true, sensitivity: nil)
+        #expect(a == .cancel)
+    }
 }

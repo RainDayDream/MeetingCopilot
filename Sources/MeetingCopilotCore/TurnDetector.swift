@@ -16,6 +16,9 @@ public final class TurnDetector {
     public var clock: () -> Date
     private var lastAuto = Date.distantPast
     private var lastAutoKey: UUID?
+    /// 最近一次 VAD 检测到对方开始出现语音的时刻，以及最近一个定稿句子的说完时刻
+    private var lastSpeechStart: Date?
+    private var lastEnd: Date?
 
     public init(clock: @escaping () -> Date = Date.init) {
         self.clock = clock
@@ -31,10 +34,29 @@ public final class TurnDetector {
         if speaker == "对方" {
             // 对方还在说 → 取消等待；一句话定稿 → 判断这一轮是否说完
             guard isFinal, autoEnabled else { return .cancel }
+            lastEnd = end
+            // 这句话说完之后，VAD 已经检测到对方又开口了（识别结果比 VAD 晚到 1.5 秒以上）：这一轮还没说完，先不触发，
+            // 等新这段话的识别结果（或确认它只是噪声）再判断
+            if let s = lastSpeechStart, s > end { return .cancel }
             return schedule(lines: lines, end: end, sensitivity: sensitivity)
         }
         // 我开口回应（一段超过 6 个字的话）→ 取消；但外放回声（对方刚说过的话在我的通道重复出现）不算
         return text.count >= 6 && !EchoGuard.isEcho(text, lines: lines, now: clock()) ? .cancel : .none
+    }
+
+    /// VAD 检测到某一路开始出现语音（早于识别结果 2 秒以上）。对方重新开口 → 立刻取消待触发。
+    /// 之后如果这段声音最终没有产生文字（噪声、过短），必须调用 `onEmptyFinal` 把触发重新安排回来，否则会漏答。
+    public func onSpeechStart(speaker: String) -> Action {
+        guard speaker == "对方" else { return .none }
+        lastSpeechStart = clock()
+        return .cancel
+    }
+
+    /// 对方的一段语音结束但没有产生文字（噪声/过短/被幻觉过滤）：这一轮若还没触发过，按最近一个定稿句子的说完时刻重新安排。
+    public func onEmptyFinal(lines: [TranscriptLine], speaker: String, autoEnabled: Bool, sensitivity: Int?) -> Action {
+        guard speaker == "对方", autoEnabled, let end = lastEnd,
+              let turn = TurnSplitter.currentTurn(lines), turn.lastID != lastAutoKey else { return .none }
+        return schedule(lines: lines, end: end, sensitivity: sensitivity)
     }
 
     /// 以“说完的时刻”为起点等待一小段静音：句末有问号 → 很快触发；句号等完整句 → 按灵敏度等待；
@@ -77,7 +99,7 @@ public final class TurnDetector {
         if let t = TurnSplitter.currentTurn(lines) { lastAutoKey = t.lastID }
     }
 
-    public func reset() { lastAutoKey = nil }
+    public func reset() { lastAutoKey = nil; lastSpeechStart = nil; lastEnd = nil }
 }
 
 /// 外放时，对方的话会被麦克风重新收进“我”的通道。用字符二元组重合度判断一句“我”的话是不是对方刚说过的话。
