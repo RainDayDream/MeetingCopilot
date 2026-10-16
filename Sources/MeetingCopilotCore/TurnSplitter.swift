@@ -45,7 +45,16 @@ public enum TurnSplitter {
 
     /// 对方最近一轮连续发言（只取对方自己的话）
     public static func currentTurn(_ input: [TranscriptLine]) -> CurrentTurn? {
-        let lines = cleaned(input)
+        // 每来一次转写更新都要算一次：只看最近的若干句即可（对话再长也是常数开销）；最近没有对方的话时才回退到全量
+        let recent = Array(input.suffix(80))
+        if recent.count < input.count, recent.contains(where: { $0.speaker == "对方" }) {
+            let lines = cleaned(recent)
+            if let t = turn(in: lines) { return t }
+        }
+        return turn(in: cleaned(input))
+    }
+
+    private static func turn(in lines: [TranscriptLine]) -> CurrentTurn? {
         guard let b = blocks(lines).last(where: { $0.speaker == "对方" }) else { return nil }
         let theirs = b.idx.map { lines[$0] }.filter { $0.speaker == "对方" }
         guard let last = theirs.last else { return nil }

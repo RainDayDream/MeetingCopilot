@@ -60,6 +60,15 @@
 - 效果：正式评测：**当前这一轮被完整标出 93.3% → 98.3%（达标）**；平均提示词 501 → 498 字；其余不变。扩展评测当前轮标对 56/60 → 59/60。
 - 测试：新增 `echoLinesAreExcludedAndDoNotSplitTheTurn`、`shortQuestionIsNotSwallowedAsBackchannel`、`backchannelClassification`；`overlongConversationDropsOldestAndSaysSo` 原先用“内容内容…”这种互相重复的合成文本，会被判成回声，改成内容明显不同的文本（测试数据修正，不是放宽断言）。
 
+### 尝试 10：长对话下每次转写更新的开销 —— 采用（提交）
+- 问题：`TurnDetector.onUpdate` 每来一次转写更新（含 2 秒一次的临时结果）都要算“当前这一轮”，而尝试 9 加的回声清洗对全部记录是 O(我的句数 × 总句数)；一小时级的会议（约 3000 句）会让主线程每次更新都白白算一遍。
+- 改动：`currentTurn` 只看最近 80 句（其中有对方的话时），否则回退全量。
+- 效果：所有评测指标完全不变；新增测试 `longConversationIsFastAndPrefixStable`（3000 句组装提示词 < 1 s，调试构建；追加一句后前缀仍稳定）、`detectorUpdateCostIsConstantOnLongConversation`（3000 句下单次 onUpdate < 20 ms）。
+
+### 评测自身发现的问题（未改评测，记入 STATUS「需人工确认」）
+- ASR 基线里“我通道幻觉句数 = 7”**是评测统计口径的问题**：这 7 条全部是 `''`（空字符串定稿，即被 VAD 切出来后因太短/被过滤而丢弃的噪声段；AppModel 不会把空文本当作一句话显示），逐条核对 `eval/results/baseline.json`：没有任何一句真正的文字幻觉。真实的文字幻觉句数是 0。冻结的评测代码（`EvalASRTests`）没有排除空串，所以我没有改它。
+- 回声泄漏率 1/1：确实有（右声道副本被识别成了“你能介绍一下你的项目吗?”），尝试 1 + 9 的回声抑制在触发/上下文层面处理了它，但转写本身（“我”通道里仍会出现一条重复句）没有改变。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**

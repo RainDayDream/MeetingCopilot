@@ -123,4 +123,40 @@ struct ContextBuilderTests {
         let turn = TurnSplitter.currentTurn(lines)
         #expect(turn?.text == "我们来聊聊这个方案的取舍。 你为什么选择了第二种？")
     }
+
+    /// 一小时级的长对话（约 3000 句）：组装提示词要足够快（在主线程上调用），并且相邻请求前缀依然稳定
+    @Test func longConversationIsFastAndPrefixStable() {
+        var lines: [TranscriptLine] = []
+        for i in 0..<3000 {
+            let q = i % 2 == 0
+            TranscriptOps.apply(&lines, speaker: q ? "对方" : "我", segment: i, start: Date(timeIntervalSince1970: Double(i) * 10),
+                                text: q ? "请详细说明第\(i)个模块在高并发场景下的设计取舍与风险？" : "第\(i)个模块我是这样设计的，先拆分职责再做容量评估和压测。", isFinal: true)
+        }
+        let t0 = Date()
+        let a = ContextBuilder.build(lines: lines, preset: PresetSpec(prompt: "T"), options: ContextOptions(systemPrompt: "S"))
+        let elapsed = Date().timeIntervalSince(t0)
+        #expect(elapsed < 1.0, "组装 3000 句对话耗时 \(elapsed)s")
+        TranscriptOps.apply(&lines, speaker: "对方", segment: 3000, start: Date(timeIntervalSince1970: 30_000), text: "那你最后是怎么验证的呢？", isFinal: true)
+        let b = ContextBuilder.build(lines: lines, preset: PresetSpec(prompt: "T"), options: ContextOptions(systemPrompt: "S"))
+        let past = a.blocks.prefix((a.cacheIdx ?? -1) + 1).joined(separator: "\n\n")
+        #expect(b.user.hasPrefix(past))
+    }
+
+    /// 每次转写更新都会调用 TurnDetector：长对话下单次开销要很小，且结果与只看最近几句一致
+    @Test func detectorUpdateCostIsConstantOnLongConversation() {
+        var lines: [TranscriptLine] = []
+        for i in 0..<3000 {
+            TranscriptOps.apply(&lines, speaker: i % 2 == 0 ? "对方" : "我", segment: i, start: Date(timeIntervalSince1970: Double(i) * 10),
+                                text: i % 2 == 0 ? "请详细说明第\(i)个模块的设计取舍？" : "第\(i)个模块我是这样设计的，先拆分职责再压测。", isFinal: true)
+        }
+        let d = TurnDetector(clock: { Date(timeIntervalSince1970: 30_000) })
+        let t0 = Date()
+        for _ in 0..<50 {
+            _ = d.onUpdate(lines: lines, speaker: "对方", text: "请详细说明第2998个模块的设计取舍？", isFinal: true,
+                           end: Date(timeIntervalSince1970: 29_980), autoEnabled: true, sensitivity: nil)
+        }
+        let per = Date().timeIntervalSince(t0) / 50
+        #expect(per < 0.02, "单次 onUpdate 耗时 \(per)s")
+        #expect(TurnSplitter.currentTurn(lines)?.text.contains("第2998个模块") == true)
+    }
 }
