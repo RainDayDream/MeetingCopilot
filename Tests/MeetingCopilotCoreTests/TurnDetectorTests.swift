@@ -35,13 +35,26 @@ struct TurnDetectorTests {
         #expect(abs(sim.asks[0].time.timeIntervalSince(end) - 1.5) < 1e-6)   // 总共 1.5s，而不是 1.0 + 1.5
     }
 
-    @Test func midSentenceWaitsExtraSecond() {
+    /// 句末是逗号/省略号/语气词：对方几乎一定还要接着说，等待明显更长（标准灵敏度 6 秒）
+    @Test func hesitationEndingWaitsLong() {
+        for text in ["那你在这个项目里，", "我想问的是……", "关于这个方案，嗯", "Let me think, so what I wanted to ask is"] {
+            let sim = Sim()
+            let t0 = sim.now
+            sim.update("对方", text)
+            sim.advance(by: 10)
+            #expect(sim.asks.count == 1, "\(text)")
+            #expect(abs(sim.asks[0].time.timeIntervalSince(t0) - 6.0) < 1e-6, "\(text)")
+        }
+    }
+
+    /// 没有句末标点（识别没给出标点）：大概率没说完，等待 4 秒
+    @Test func noTerminalPunctuationWaitsFourSeconds() {
         let sim = Sim()
         let t0 = sim.now
-        sim.update("对方", "那你在这个项目里，")
-        sim.advance(by: 5)
+        sim.update("对方", "你能介绍一下你在这个项目里负责的模块")
+        sim.advance(by: 10)
         #expect(sim.asks.count == 1)
-        #expect(abs(sim.asks[0].time.timeIntervalSince(t0) - 2.5) < 1e-6)
+        #expect(abs(sim.asks[0].time.timeIntervalSince(t0) - 4.0) < 1e-6)
     }
 
     @Test func tooShortTurnIsIgnored() {

@@ -43,9 +43,14 @@ public final class TurnDetector {
         guard let turn = TurnSplitter.currentTurn(lines), turn.text.count >= 4, let last = turn.text.last else { return .cancel }
         let base = [0.8, 1.5, 2.5][min(max(sensitivity ?? 1, 0), 2)]
         let wait: Double
-        if "?？".contains(last) { wait = min(0.5, base) }
-        else if "。.！!…".contains(last) { wait = base }
-        else { wait = base + 1.0 }
+        switch Ending.classify(turn.text) {
+        case .question: wait = min(0.5, base)
+        case .sentence: wait = base
+        // 句末是逗号/省略号/语气词/连接词：对方几乎一定还要接着说。识别结果最晚要在对方重新开口 2.7 秒后才到达，
+        // 所以等待必须明显更长，才有机会在触发前收到“对方又开口了”的信号
+        case .hesitation: wait = base + 4.5
+        case .open: wait = base + 2.5      // 没有句末标点，大概率没说完
+        }
         // 语音识别本身已耗时，从实际说完的时刻算起
         let delay = max(0.05, wait - clock().timeIntervalSince(end))
         return .schedule(delay: delay, key: turn.lastID)
@@ -89,5 +94,26 @@ public enum EchoGuard {
         for l in lines where l.speaker == "对方" && now.timeIntervalSince(l.time) < 20 { theirs.formUnion(bigrams(l.text)) }
         guard !theirs.isEmpty else { return false }
         return Double(mine.filter { theirs.contains($0) }.count) / Double(mine.count) >= 0.6
+    }
+}
+
+/// 一轮话的句末类型，决定触发前等多久
+enum Ending {
+    case question, sentence, hesitation, open
+
+    static func classify(_ text: String) -> Ending {
+        let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let last = t.last else { return .open }
+        if "?？".contains(last) { return .question }
+        if "，,、—…:：;；".contains(last) || t.hasSuffix("...") { return .hesitation }
+        let lower = t.lowercased()
+        let fillers = ["嗯", "呃", "啊", "额", "那个", "这个", "就是", "然后", "所以", "因为", "但是", "如果", "或者", "以及", "并且", "还有",
+                       "让我想想", "我想问的是", "我想了解一下", "的", "是", "um", "uh", "so", "and", "but", "or", "because", "the", "a",
+                       "to", "of", "that", "is", "um,", "wanted to ask is"]
+        if !"。.！!".contains(last) {
+            if fillers.contains(where: { lower.hasSuffix($0) }) { return .hesitation }
+            return .open
+        }
+        return .sentence
     }
 }
