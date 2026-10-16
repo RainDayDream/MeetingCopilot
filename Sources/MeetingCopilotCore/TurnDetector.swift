@@ -69,7 +69,8 @@ public final class TurnDetector {
         let wait: Double
         switch Ending.classify(turn.text) {
         case .question: wait = min(0.5, base)
-        case .sentence: wait = base
+        // 完整句但没有任何提问/请求线索（多半是在铺垫题目背景，真正的问题还在后面）：多等 1 秒
+        case .sentence: wait = ResponseCue.hasCue(turn.text) ? base : base + 1.0
         // 句末是逗号/省略号/语气词/连接词：对方几乎一定还要接着说。识别结果最晚要在对方重新开口 2.7 秒后才到达，
         // 所以等待必须明显更长，才有机会在触发前收到“对方又开口了”的信号
         case .hesitation: wait = base + 4.5
@@ -157,9 +158,14 @@ enum ResponseCue {
     ]
     static let transitions: [String] = ["进入下一", "下一个环节", "下一个问题", "今天就到这里", "就到这里", "我们开始", "开始吧", "that's all", "that is all", "let's move on", "moving on"]
 
+    static func hasCue(_ text: String) -> Bool {
+        let t = text.lowercased()
+        return cues.contains(where: { t.contains($0) })
+    }
+
     static func needsResponse(_ text: String) -> Bool {
         let t = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
-        if cues.contains(where: { t.contains($0) }) { return true }
+        if hasCue(t) { return true }
         let ack = ackStarts.contains(where: { t.hasPrefix($0) }) || transitions.contains(where: { t.contains($0) })
         return !ack
     }

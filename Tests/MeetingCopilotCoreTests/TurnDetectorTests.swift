@@ -212,4 +212,16 @@ struct TurnDetectorTests {
         let a = d.onUpdate(lines: lines, speaker: "对方", text: "你能介绍一下你的项目吗？", isFinal: true, end: base, autoEnabled: true, sensitivity: nil)
         #expect(a == .cancel)
     }
+
+    /// 完整句但没有任何提问/请求线索（多半是铺垫题目背景）：多等 1 秒；有线索的不受影响
+    @Test func cueLessStatementWaitsOneExtraSecond() {
+        let a = Sim(); let t0 = a.now
+        a.update("对方", "假设你要设计一个短链接服务。")
+        a.advance(by: 10)
+        #expect(abs(a.asks[0].time.timeIntervalSince(t0) - 2.5) < 1e-6)
+        let b = Sim(); let t1 = b.now
+        b.update("对方", "请你设计一个短链接服务。")
+        b.advance(by: 10)
+        #expect(abs(b.asks[0].time.timeIntervalSince(t1) - 1.55) < 0.06)
+    }
 }

@@ -41,6 +41,12 @@
 - 需人工验证 / 需人工确认：① 真实环境里 VAD 起始信号的延迟与误触发（系统音频里的提示音、音乐会取消待触发，靠 `onEmptyFinal` 兜底，兜底只在这段声音结束后才生效）；② 评测应否把“语音起始信号”纳入时序模型并重新冻结（见 STATUS 的需人工确认）。
 - 测试：`speechStartCancelsPendingImmediately`、`myspeechStartIsIgnored`、`noiseAfterSpeechStartRearmsTrigger`、`speechStartedBeforePreviousFinalSuppressesSchedule`。
 
+### 尝试 7：没有提问/请求线索的完整句多等 1 秒 —— 采用（提交）
+- 改动：句号结尾、但整轮话里没有任何提问/请求线索（多半是在铺垫题目背景，如“假设你要设计一个短链接服务。”）→ 等 `base+1.0`（2.5 s）；有线索的不变（1.5 s）。
+- 效果：正式评测不变（该信号不依赖识别时序，原有指标 21.7%/25.0%/17 都没动，没有变差）；扩展评测（含 VAD 起始信号）抢答 3.3% → **0.0%**，重复 2 → **0**，漏答 0、误答 25.0%、延迟 P95 1.55 s 不变（只拖慢了本来也不该回答的无线索陈述）。
+- 局限：这条规则是看了 long_technical 类的失败后加的，数据集是我合成的，0.0% 偏乐观；没有线索词表覆盖到的真实提问（例如只说“你的优势。”）会被多等 1 秒。
+- 测试：`cueLessStatementWaitsOneExtraSecond`。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**
