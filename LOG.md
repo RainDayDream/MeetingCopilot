@@ -54,6 +54,12 @@
 - 风险 / 需人工验证：① 真实麦克风下“持续有声 0.8 s”是否会被环境噪声/电流声误触发（误触发后果是漏答，因为待触发被取消）；② `secondsSinceVoice` 的 0.4 s 阈值在真实外放（房间混响 > 0.4 s）下可能把尾音当成我在说话；③ AppModel 的接线只有编译验证，没有真实麦克风验证。
 - 测试：`meSpeakingRequiresQuietSystemChannel`、`meSpeakingBeforePreviousFinalSuppressesSchedule`。
 
+### 尝试 9：附和按内容判断（不按长度）+ 外放回声不参与切轮、不进提示词 —— 采用（提交）
+- 发现的 bug（上下文切轮）：`TurnSplitter` 用“< 6 个字”判断“夹杂的插话并入当前轮”，结果 ① “为什么？”这样的**短问题**会被并进我的回答里，永远触发不了，还会把上一个问题误当成当前轮；② “嗯，那如果”这种开头半句被并进我的块里，当前轮缺了开头；③ “Right.”（6 个字符）反而被当成独立一轮，把对方的一轮话切成两半；④ 外放回声行（我通道里重复的对方的话）把对方的一轮话切碎，并作为“[我] …”出现在提示词里。
+- 改动：`isBackchannel` 按内容判断（嗯/对/好的/是的/yeah/right/okay/uh-huh/I see …，纯语气词 ≤ 4 字）；`TurnSplitter.cleaned` 去掉与附近对方话几乎重复的“我”行（字符二元组重合 ≥ 60%，窗口：对方话之前 20 s 到之后 2 s），`blocks/currentTurn/ContextBuilder` 都用清洗后的记录。
+- 效果：正式评测：**当前这一轮被完整标出 93.3% → 98.3%（达标）**；平均提示词 501 → 498 字；其余不变。扩展评测当前轮标对 56/60 → 59/60。
+- 测试：新增 `echoLinesAreExcludedAndDoNotSplitTheTurn`、`shortQuestionIsNotSwallowedAsBackchannel`、`backchannelClassification`；`overlongConversationDropsOldestAndSaysSo` 原先用“内容内容…”这种互相重复的合成文本，会被判成回声，改成内容明显不同的文本（测试数据修正，不是放宽断言）。
+
 ## 2026-10-16　评测基础设施搭建（分支 auto-iter，本阶段不改产品行为）
 
 **提交**

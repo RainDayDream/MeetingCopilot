@@ -20,6 +20,7 @@ struct EvalEarlySignalTests {
         let detector: TurnDetector
         private var pending: (fireAt: Date, key: UUID)?
         var triggers: [Date] = []
+        var prompts: [Prompt] = []
 
         init(start: Date) {
             now = start
@@ -40,7 +41,11 @@ struct EvalEarlySignalTests {
             while let p = pending, p.fireAt <= t {
                 now = max(now, p.fireAt)
                 pending = nil
-                if detector.shouldFire(key: p.key, lines: lines) { triggers.append(now) }
+                if detector.shouldFire(key: p.key, lines: lines) {
+                    triggers.append(now)
+                    prompts.append(ContextBuilder.build(lines: lines, preset: PresetSpec(prompt: Replay.presetPrompt),
+                                                        options: ContextOptions(systemPrompt: Replay.systemPrompt, auto: true)))
+                }
             }
             if t > now { now = t }
         }
@@ -54,7 +59,7 @@ struct EvalEarlySignalTests {
         }
     }
 
-    static func run(_ d: EvalDialog, meSignal: Bool) -> [Double] {
+    static func run(_ d: EvalDialog, meSignal: Bool) -> (times: [Double], prompts: [Prompt]) {
         var items: [(Double, Int, Item)] = []
         var seq = 0
         func add(_ t: Double, _ i: Item) { seq += 1; items.append((t, seq, i)) }
@@ -88,7 +93,7 @@ struct EvalEarlySignalTests {
             }
         }
         sim.advance(to: base.addingTimeInterval((items.last?.0 ?? 0) + 15))
-        return sim.triggers.map { $0.timeIntervalSince(base) }
+        return (sim.triggers.map { $0.timeIntervalSince(base) }, sim.prompts)
     }
 
     @Test func earlySignalEval() throws {
@@ -96,15 +101,24 @@ struct EvalEarlySignalTests {
         for (name, me) in [("vad_start", false), ("vad_start_plus_me_speaking", true)] {
             var all = EvalMetrics.TriggerStats()
             var byCat: [String: EvalMetrics.TriggerStats] = [:]
+            var checked = 0, marked = 0
             for d in try EvalData.loadDialogs() {
-                let s = EvalMetrics.scoreTriggers(Self.run(d, meSignal: me), d.expected)
+                let r = Self.run(d, meSignal: me)
+                let s = EvalMetrics.scoreTriggers(r.times, d.expected)
                 all.add(s); byCat[d.category, default: EvalMetrics.TriggerStats()].add(s)
+                for x in d.expected where x.shouldAnswer {
+                    guard let i = r.times.firstIndex(where: { $0 >= x.questionEnd - 1e-9 && $0 <= x.windowEnd + 1e-9 }) else { continue }
+                    checked += 1
+                    let cur = EvalContextTests.strip(r.prompts[i].blocks.first { $0.hasPrefix("【当前这一轮") } ?? "")
+                    if d.questionSegments(x).allSatisfy({ cur.contains(EvalContextTests.strip($0)) }) { marked += 1 }
+                }
             }
             var out = EvalTriggerTests.summarize(all)
+            out["current_question_marked"] = EvalMetrics.rate(marked, checked) as Any
             out["by_category"] = Dictionary(uniqueKeysWithValues: byCat.map { ($0.key, EvalTriggerTests.summarize($0.value)) })
             results[name] = out
             func p(_ k: String) -> String { (out[k] as? Double).map { String(format: "%.1f%%", $0 * 100) } ?? "-" }
-            print("[early-signal] \(name): 抢答 \(p("premature_rate"))  漏答 \(p("miss_rate"))  误答 \(p("false_answer_rate"))  重复 \(all.duplicates)  P95 \(String(format: "%.2f", out["latency_p95_s"] as? Double ?? 0))")
+            print("[early-signal] \(name): 抢答 \(p("premature_rate"))  漏答 \(p("miss_rate"))  误答 \(p("false_answer_rate"))  重复 \(all.duplicates)  当前轮标对 \(marked)/\(checked)  P95 \(String(format: "%.2f", out["latency_p95_s"] as? Double ?? 0))")
             for (c, v) in byCat.sorted(by: { $0.key < $1.key }) where ["me_interrupt", "echo", "chitchat"].contains(c) {
                 print("[early-signal]   \(c): 抢答 \(v.premature)/\(v.shouldAnswer) 漏答 \(v.miss)/\(v.shouldAnswer) 误答 \(v.falseAnswer)/\(v.nonQuestions)")
             }

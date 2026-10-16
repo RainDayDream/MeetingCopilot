@@ -60,13 +60,51 @@ struct ContextBuilderTests {
     @Test func overlongConversationDropsOldestAndSaysSo() {
         var lines: [TranscriptLine] = []
         for i in 0..<60 {
+            // 双方内容明显不同（否则“我”的话会被当作外放回声过滤掉）
+            let text = i % 2 == 0 ? String(repeating: "请说明方案\(i)的取舍与风险。", count: 8)
+                                  : String(repeating: "我的回答\(i)是先分析需求再拆分模块。", count: 8)
             TranscriptOps.apply(&lines, speaker: i % 2 == 0 ? "对方" : "我", segment: i,
-                                start: Date(timeIntervalSince1970: Double(i)), text: String(repeating: "内容", count: 30) + "\(i)", isFinal: true)
+                                start: Date(timeIntervalSince1970: Double(i)), text: text, isFinal: true)
         }
         let p = ContextBuilder.build(lines: lines, preset: PresetSpec(prompt: "T"),
                                      options: ContextOptions(systemPrompt: "S", maxContextChars: 800))
         #expect(p.user.contains("更早的对话因过长已省略"))
-        #expect(!p.user.contains("[我] " + String(repeating: "内容", count: 30) + "1\n"))
+        #expect(!p.user.contains("我的回答1是"))
+    }
+
+    /// 外放回声（“我”通道里重复出现的对方的话）不进入提示词，也不会把对方的一轮话切断
+    @Test func echoLinesAreExcludedAndDoNotSplitTheTurn() {
+        let sim = Sim()
+        sim.update("对方", "你在团队里遇到过冲突吗？")
+        sim.update("我", "你在团队里遇到过冲突吗？")          // 回声
+        sim.advance(by: 0.2)
+        sim.update("对方", "是怎么处理的？")
+        sim.update("我", "是怎么处理的？")                     // 回声
+        sim.advance(by: 5)
+        let p = sim.asks.last!.prompt
+        let cur = p.blocks.first { $0.hasPrefix("【当前这一轮") } ?? ""
+        #expect(cur.contains("遇到过冲突") && cur.contains("是怎么处理的"))
+        #expect(!p.user.contains("[我] "))      // 回声不出现在提示词里（标题里的“[我]=…”图例不算）
+    }
+
+    /// 短问题（“为什么？”）是一轮新的话，不能被当成附和并进我的回答里
+    @Test func shortQuestionIsNotSwallowedAsBackchannel() {
+        let sim = Sim()
+        sim.update("对方", "你是怎么设计这个缓存的？")
+        sim.advance(by: 3)
+        sim.update("我", "我用了本地缓存加分布式缓存的两级结构。")
+        sim.advance(by: 3)
+        let n = sim.asks.count
+        sim.update("对方", "为什么？")
+        sim.advance(by: 5)
+        #expect(sim.asks.count == n + 1)
+        let cur = sim.asks.last!.prompt.blocks.first { $0.hasPrefix("【当前这一轮") } ?? ""
+        #expect(cur.contains("为什么？") && !cur.contains("缓存的？"))
+    }
+
+    @Test func backchannelClassification() {
+        for t in ["嗯", "嗯嗯。", "对。", "好的", "Right.", "yeah", "Uh-huh", "I see."] { #expect(TurnSplitter.isBackchannel(t), "\(t)") }
+        for t in ["为什么？", "嗯，那如果", "数据量再大十倍呢？", "How so?", "Why not Pulsar?"] { #expect(!TurnSplitter.isBackchannel(t), "\(t)") }
     }
 
     @Test func autoTaskCarriesNoAnswerInstruction() {

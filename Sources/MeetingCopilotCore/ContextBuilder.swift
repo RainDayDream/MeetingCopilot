@@ -69,7 +69,8 @@ public enum ContextBuilder {
 
     /// 发给模型的上下文 = 整场对话（双方）+ 当前这一轮 + 任务。
     /// 整场对话只在末尾追加，因此相邻两次请求共享同一个前缀，服务端的前缀缓存可以让长对话也很快响应。
-    public static func build(lines: [TranscriptLine], preset p: PresetSpec, options o: ContextOptions) -> Prompt {
+    public static func build(lines input: [TranscriptLine], preset p: PresetSpec, options o: ContextOptions) -> Prompt {
+        let lines = TurnSplitter.cleaned(input)   // 外放回声不进入提示词
         var stable = o.systemPrompt
         if let bg = o.meetingBackground?.trimmingCharacters(in: .whitespacesAndNewlines), !bg.isEmpty {
             stable += "\n\n【会议背景（用户提供）】\n" + bg

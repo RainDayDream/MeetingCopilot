@@ -125,10 +125,18 @@ public enum EchoGuard {
 
     /// text 的二元组至少 60% 出现在最近 20 秒内对方说过的话里 → 视为回声
     public static func isEcho(_ text: String, lines: [TranscriptLine], now: Date) -> Bool {
+        isEcho(text, lines: lines, reference: now)
+    }
+
+    /// reference：这句“我”的话的时刻。对方的话在它之前 20 秒内、之后 2 秒内（回声晚于原声，但识别先后可能颠倒）都算候选
+    public static func isEcho(_ text: String, lines: [TranscriptLine], reference: Date) -> Bool {
         let mine = bigrams(text)
         guard mine.count >= 3 else { return false }
         var theirs = Set<String>()
-        for l in lines where l.speaker == "对方" && now.timeIntervalSince(l.time) < 20 { theirs.formUnion(bigrams(l.text)) }
+        for l in lines where l.speaker == "对方" {
+            let d = reference.timeIntervalSince(l.time)
+            if d > -2 && d < 20 { theirs.formUnion(bigrams(l.text)) }
+        }
         guard !theirs.isEmpty else { return false }
         return Double(mine.filter { theirs.contains($0) }.count) / Double(mine.count) >= 0.6
     }
