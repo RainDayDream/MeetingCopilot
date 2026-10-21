@@ -39,6 +39,7 @@ codesign --verify --deep --strict --verbose=2 build/MeetingCopilot.app
 
 - 构建或测试失败不算完成；不能运行的项标「未运行 / 需人工验证」。
 - 纯文档改动可跳过 app 编译，但要说明。
+- 功能发生较多迭代或大型迭代时，同步更新 README（特性、使用方式、限制、界面变化）。
 - 正式指标只认冻结评测；扩展评测只能写“参考”。
 
 ## 单 app
