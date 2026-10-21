@@ -7,8 +7,8 @@
   <key>CFBundleIdentifier</key><string>com.meetingcopilot.MeetingCopilot</string>
   <key>CFBundleExecutable</key><string>MeetingCopilot</string>
   <key>CFBundlePackageType</key><string>APPL</string>
-  <key>CFBundleShortVersionString</key><string>0.1.1</string>
-  <key>CFBundleVersion</key><string>3</string>
+  <key>CFBundleShortVersionString</key><string>0.1.2</string>
+  <key>CFBundleVersion</key><string>4</string>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>NSHighResolutionCapable</key><true/>
   <key>NSMicrophoneUsageDescription</key><string>用于把你自己的发言转成文字，作为 AI 回答的上下文。音频不会被保存。</string>
