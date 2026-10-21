@@ -1,0 +1,38 @@
+{
+ "id": "imperative_04",
+ "category": "imperative",
+ "lang": "en",
+ "description": "没有疑问词/问号的指令式提问，应回答",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Walk me through your resume.",
+   "start": 1.0,
+   "end": 2.395,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me start from the big picture.",
+   "start": 4.895,
+   "end": 7.08,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 2.395,
+   "question_text": "Walk me through your resume.",
+   "reply_start": 4.895,
+   "note": "指令式",
+   "window_end": 4.895,
+   "id": "q1"
+  }
+ ]
+}

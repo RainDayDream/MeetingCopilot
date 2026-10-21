@@ -1,0 +1,155 @@
+{
+ "id": "full_interview_03",
+ "category": "full_interview",
+ "lang": "en",
+ "description": "完整英文面试片段",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Thanks for joining us today.",
+   "start": 1.0,
+   "end": 3.102,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Thank you, glad to be here.",
+   "start": 4.102,
+   "end": 6.574,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "Tell me about yourself.",
+   "start": 8.074,
+   "end": 9.805,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "I am a machine learning engineer with three years of experience in recommendation.",
+   "start": 12.305,
+   "end": 17.37,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "Why did you choose that approach?",
+   "start": 18.87,
+   "end": 21.342,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Mainly because of latency and the amount of data we had.",
+   "start": 23.842,
+   "end": 28.166,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "OK, I see.",
+   "start": 29.666,
+   "end": 31.027,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Yes.",
+   "start": 32.027,
+   "end": 32.647,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "And how did you measure success?",
+   "start": 34.147,
+   "end": 36.619,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "We ran A/B tests and tracked click through rate.",
+   "start": 39.119,
+   "end": 43.073,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "Do you have any questions for us?",
+   "start": 44.573,
+   "end": 47.416,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Yes, what are the biggest challenges for the team right now?",
+   "start": 49.916,
+   "end": 54.24,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.102,
+   "question_text": "Thanks for joining us today.",
+   "reply_start": 4.102,
+   "note": "寒暄",
+   "window_end": 8.064,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 8.074,
+   "question_end": 9.805,
+   "question_text": "Tell me about yourself.",
+   "reply_start": 12.305,
+   "note": "指令式",
+   "window_end": 12.305,
+   "id": "q2"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 18.87,
+   "question_end": 21.342,
+   "question_text": "Why did you choose that approach?",
+   "reply_start": 23.842,
+   "note": "提问",
+   "window_end": 23.842,
+   "id": "q3"
+  },
+  {
+   "should_answer": false,
+   "turn_start": 29.666,
+   "question_end": 31.027,
+   "question_text": "OK, I see.",
+   "reply_start": 32.027,
+   "note": "附和",
+   "window_end": 34.137,
+   "id": "q4"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 34.147,
+   "question_end": 36.619,
+   "question_text": "And how did you measure success?",
+   "reply_start": 39.119,
+   "note": "提问",
+   "window_end": 39.119,
+   "id": "q5"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 44.573,
+   "question_end": 47.416,
+   "question_text": "Do you have any questions for us?",
+   "reply_start": 49.916,
+   "note": "反问",
+   "window_end": 49.916,
+   "id": "q6"
+  }
+ ]
+}

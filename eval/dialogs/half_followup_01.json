@@ -1,0 +1,66 @@
+{
+ "id": "half_followup_01",
+ "category": "half_followup",
+ "lang": "zh",
+ "description": "先有一问一答，随后对方说半截追问并停顿，再补完",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你们的推荐系统用的是什么架构？",
+   "start": 1.0,
+   "end": 4.583,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "我们用的是双塔召回加精排的两阶段架构，召回层用向量检索，精排用深度模型。",
+   "start": 7.083,
+   "end": 15.19,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "那这个方案的",
+   "start": 16.69,
+   "end": 18.369,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "延迟是怎么优化的？",
+   "start": 19.969,
+   "end": 22.124,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个问题我想一下，大致是这样的。",
+   "start": 24.624,
+   "end": 28.207,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.583,
+   "question_text": "你们的推荐系统用的是什么架构？",
+   "reply_start": 7.083,
+   "note": "",
+   "window_end": 7.083,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 16.69,
+   "question_end": 22.124,
+   "question_text": "那这个方案的延迟是怎么优化的？",
+   "reply_start": 24.624,
+   "note": "半截追问",
+   "window_end": 24.624,
+   "id": "q2"
+  }
+ ]
+}

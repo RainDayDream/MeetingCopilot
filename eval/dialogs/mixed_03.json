@@ -1,0 +1,38 @@
+{
+ "id": "mixed_03",
+ "category": "mixed_lang",
+ "lang": "mixed",
+ "description": "中英混杂的提问",
+ "audio": {
+  "noise": false,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "能不能讲讲你对 microservice 和 monolith 的 trade-off 的理解？",
+   "start": 1.0,
+   "end": 5.592,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我来解释一下。",
+   "start": 8.092,
+   "end": 9.971,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 5.592,
+   "question_text": "能不能讲讲你对 microservice 和 monolith 的 trade-off 的理解？",
+   "reply_start": 8.092,
+   "note": "中英混杂",
+   "window_end": 8.092,
+   "id": "q1"
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "id": "imperative_02",
+ "category": "imperative",
+ "lang": "zh",
+ "description": "没有疑问词/问号的指令式提问，应回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "说一下你的优势。",
+   "start": 1.0,
+   "end": 2.917,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我先从整体说起。",
+   "start": 5.417,
+   "end": 7.81,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 2.917,
+   "question_text": "说一下你的优势。",
+   "reply_start": 5.417,
+   "note": "指令式",
+   "window_end": 5.417,
+   "id": "q1"
+  }
+ ]
+}

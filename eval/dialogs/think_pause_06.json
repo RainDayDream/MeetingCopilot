@@ -1,0 +1,42 @@
+{
+ "id": "think_pause_06",
+ "category": "think_pause",
+ "lang": "zh",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "好，那我想了解一下，就是……",
+   "start": 1.0,
+   "end": 3.631,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你在团队里具体承担了什么角色？",
+   "start": 5.231,
+   "end": 8.814,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个问题我来说一下，主要有几个方面。",
+   "start": 11.314,
+   "end": 15.85,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 8.814,
+   "question_text": "好，那我想了解一下，就是……你在团队里具体承担了什么角色？",
+   "reply_start": 11.314,
+   "note": "停顿 1.6s",
+   "window_end": 11.314,
+   "id": "q1"
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "id": "english_02",
+ "category": "english",
+ "lang": "en",
+ "description": "英文提问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "What is your biggest weakness?",
+   "start": 1.0,
+   "end": 3.102,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me explain.",
+   "start": 5.602,
+   "end": 7.333,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 3.102,
+   "question_text": "What is your biggest weakness?",
+   "reply_start": 5.602,
+   "note": "英文",
+   "window_end": 5.602,
+   "id": "q1"
+  }
+ ]
+}

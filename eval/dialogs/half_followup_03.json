@@ -1,0 +1,66 @@
+{
+ "id": "half_followup_03",
+ "category": "half_followup",
+ "lang": "zh",
+ "description": "先有一问一答，随后对方说半截追问并停顿，再补完",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "这个项目的数据规模有多大？",
+   "start": 1.0,
+   "end": 4.107,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "日志每天大概两个 T，样本量在十亿级别。",
+   "start": 6.607,
+   "end": 11.037,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "嗯，那如果",
+   "start": 12.537,
+   "end": 13.739,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "数据量再大十倍呢？",
+   "start": 15.539,
+   "end": 17.694,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个问题我想一下，大致是这样的。",
+   "start": 20.194,
+   "end": 23.777,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.107,
+   "question_text": "这个项目的数据规模有多大？",
+   "reply_start": 6.607,
+   "note": "",
+   "window_end": 6.607,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 12.537,
+   "question_end": 17.694,
+   "question_text": "嗯，那如果数据量再大十倍呢？",
+   "reply_start": 20.194,
+   "note": "半截追问",
+   "window_end": 20.194,
+   "id": "q2"
+  }
+ ]
+}

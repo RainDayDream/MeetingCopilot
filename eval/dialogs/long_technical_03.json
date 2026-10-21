@@ -1,0 +1,49 @@
+{
+ "id": "long_technical_03",
+ "category": "long_technical",
+ "lang": "en",
+ "description": "多句长题，句间有停顿；应在全部说完后触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Imagine you are building a chat service.",
+   "start": 1.0,
+   "end": 3.843,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "It needs to support ten million concurrent users.",
+   "start": 5.043,
+   "end": 8.256,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "How would you design the message delivery?",
+   "start": 9.856,
+   "end": 12.699,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "OK, let me think about the approach first.",
+   "start": 15.199,
+   "end": 18.412,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 12.699,
+   "question_text": "Imagine you are building a chat service.It needs to support ten million concurrent users.How would you design the message delivery?",
+   "reply_start": 15.199,
+   "note": "长技术题",
+   "window_end": 15.199,
+   "id": "q1"
+  }
+ ]
+}

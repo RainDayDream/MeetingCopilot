@@ -1,0 +1,45 @@
+{
+ "id": "think_pause_01",
+ "category": "think_pause",
+ "lang": "zh",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": {
+  "noise": true,
+  "echo": false
+ },
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "我们先来看看你的项目，嗯……我想问的是",
+   "start": 1.0,
+   "end": 4.812,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你在这个项目里遇到的最大技术挑战是什么？",
+   "start": 6.812,
+   "end": 10.672,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个问题我来说一下，主要有几个方面。",
+   "start": 13.172,
+   "end": 17.245,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 10.672,
+   "question_text": "我们先来看看你的项目，嗯……我想问的是你在这个项目里遇到的最大技术挑战是什么？",
+   "reply_start": 13.172,
+   "note": "停顿 2.0s",
+   "window_end": 13.172,
+   "id": "q1"
+  }
+ ]
+}

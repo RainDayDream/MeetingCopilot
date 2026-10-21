@@ -1,0 +1,42 @@
+{
+ "id": "think_pause_02",
+ "category": "think_pause",
+ "lang": "zh",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "关于你简历上的这个推荐系统，呃，",
+   "start": 1.0,
+   "end": 4.583,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你们的召回是怎么做的？",
+   "start": 5.783,
+   "end": 8.414,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个问题我来说一下，主要有几个方面。",
+   "start": 10.914,
+   "end": 15.45,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 8.414,
+   "question_text": "关于你简历上的这个推荐系统，呃，你们的召回是怎么做的？",
+   "reply_start": 10.914,
+   "note": "停顿 1.2s",
+   "window_end": 10.914,
+   "id": "q1"
+  }
+ ]
+}

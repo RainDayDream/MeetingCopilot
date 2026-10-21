@@ -1,0 +1,35 @@
+{
+ "id": "me_interrupt_04",
+ "category": "me_interrupt",
+ "lang": "zh",
+ "description": "我方在问题说完前后很快开口，不应再触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你平时是怎么保证代码质量的？",
+   "start": 1.0,
+   "end": 4.345,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个我比较熟悉，我们团队有严格的代码评审和单元测试。",
+   "start": 4.745,
+   "end": 10.709,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 4.345,
+   "question_text": "你平时是怎么保证代码质量的？",
+   "reply_start": 4.745,
+   "note": "我在问题说完后 0.4 秒抢答",
+   "window_end": 12.745,
+   "id": "q1"
+  }
+ ]
+}

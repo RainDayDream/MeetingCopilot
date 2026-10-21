@@ -1,0 +1,66 @@
+{
+ "id": "half_followup_02",
+ "category": "half_followup",
+ "lang": "zh",
+ "description": "先有一问一答，随后对方说半截追问并停顿，再补完",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "你为什么选择用 Redis 做缓存？",
+   "start": 1.0,
+   "end": 4.001,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "主要是读多写少，Redis 的延迟低，而且数据结构丰富，用起来比较方便。",
+   "start": 6.501,
+   "end": 13.312,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "所以你刚才说的那个，",
+   "start": 14.812,
+   "end": 17.205,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "为什么不用本地缓存？",
+   "start": 18.605,
+   "end": 20.998,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "这个问题我想一下，大致是这样的。",
+   "start": 23.498,
+   "end": 27.081,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.001,
+   "question_text": "你为什么选择用 Redis 做缓存？",
+   "reply_start": 6.501,
+   "note": "",
+   "window_end": 6.501,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 14.812,
+   "question_end": 20.998,
+   "question_text": "所以你刚才说的那个，为什么不用本地缓存？",
+   "reply_start": 23.498,
+   "note": "半截追问",
+   "window_end": 23.498,
+   "id": "q2"
+  }
+ ]
+}

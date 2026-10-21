@@ -1,0 +1,42 @@
+{
+ "id": "multi_question_04",
+ "category": "multi_question",
+ "lang": "en",
+ "description": "对方连珠式提出多个问题；应在最后一问说完后触发一次",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "What was your role in the project?",
+   "start": 1.0,
+   "end": 3.843,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "And how big was the team?",
+   "start": 4.843,
+   "end": 7.315,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me answer them one by one.",
+   "start": 9.815,
+   "end": 13.028,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 7.315,
+   "question_text": "What was your role in the project?And how big was the team?",
+   "reply_start": 9.815,
+   "note": "连珠多问",
+   "window_end": 9.815,
+   "id": "q1"
+  }
+ ]
+}

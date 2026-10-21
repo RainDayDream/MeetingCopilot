@@ -1,0 +1,42 @@
+{
+ "id": "multi_question_05",
+ "category": "multi_question",
+ "lang": "zh",
+ "description": "对方连珠式提出多个问题；应在最后一问说完后触发一次",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "请介绍一下你的实习经历。",
+   "start": 1.0,
+   "end": 3.869,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "重点说说你负责的模块。",
+   "start": 5.169,
+   "end": 7.8,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，我一个一个来回答。",
+   "start": 10.3,
+   "end": 12.931,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 7.8,
+   "question_text": "请介绍一下你的实习经历。重点说说你负责的模块。",
+   "reply_start": 10.3,
+   "note": "连珠多问",
+   "window_end": 10.3,
+   "id": "q1"
+  }
+ ]
+}

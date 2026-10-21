@@ -1,0 +1,35 @@
+{
+ "id": "chitchat_01",
+ "category": "chitchat",
+ "lang": "zh",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "好的，我们开始吧。",
+   "start": 1.0,
+   "end": 2.917,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，谢谢。",
+   "start": 4.117,
+   "end": 5.319,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 2.917,
+   "question_text": "好的，我们开始吧。",
+   "reply_start": 4.117,
+   "note": "寒暄/陈述",
+   "window_end": 12.117,
+   "id": "q1"
+  }
+ ]
+}

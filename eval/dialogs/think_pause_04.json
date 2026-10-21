@@ -1,0 +1,42 @@
+{
+ "id": "think_pause_04",
+ "category": "think_pause",
+ "lang": "zh",
+ "description": "对方先说半句并停顿，再说出真正的问题；停顿期间不应触发",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "所以在高并发的场景下，嗯，让我想想",
+   "start": 1.0,
+   "end": 4.821,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你们是怎么保证数据一致性的？",
+   "start": 7.421,
+   "end": 10.766,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，这个问题我来说一下，主要有几个方面。",
+   "start": 13.266,
+   "end": 17.802,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 10.766,
+   "question_text": "所以在高并发的场景下，嗯，让我想想你们是怎么保证数据一致性的？",
+   "reply_start": 13.266,
+   "note": "停顿 2.6s",
+   "window_end": 13.266,
+   "id": "q1"
+  }
+ ]
+}

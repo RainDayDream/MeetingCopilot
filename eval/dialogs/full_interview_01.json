@@ -1,0 +1,179 @@
+{
+ "id": "full_interview_01",
+ "category": "full_interview",
+ "lang": "zh",
+ "description": "完整中文面试片段：寒暄、自我介绍、项目、追问、反问",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "好的，我们开始吧。",
+   "start": 1.0,
+   "end": 2.917,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "好的，谢谢。",
+   "start": 3.917,
+   "end": 5.119,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "请先做个自我介绍。",
+   "start": 6.619,
+   "end": 8.774,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "我叫小明，硕士毕业，做了两年推荐系统方向的研究和工程。",
+   "start": 10.974,
+   "end": 16.938,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "嗯，不错。",
+   "start": 18.438,
+   "end": 19.402,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "谢谢。",
+   "start": 20.402,
+   "end": 21.128,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你在这个项目里最大的挑战是什么？",
+   "start": 22.628,
+   "end": 26.449,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "最大的挑战是线上延迟，我们通过模型蒸馏和缓存把 P99 降到了五十毫秒。",
+   "start": 28.949,
+   "end": 36.474,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "那你是怎么解决的，",
+   "start": 37.974,
+   "end": 40.129,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "效果怎么样？",
+   "start": 41.629,
+   "end": 43.069,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "蒸馏之后精度只掉了不到百分之一，吞吐提升了三倍。",
+   "start": 45.569,
+   "end": 51.057,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "你有什么想问我们的吗？",
+   "start": 52.557,
+   "end": 55.188,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "我想了解一下团队目前最想解决的问题是什么。",
+   "start": 57.688,
+   "end": 62.7,
+   "kind": "speech"
+  },
+  {
+   "speaker": "对方",
+   "text": "好的，今天就到这里，谢谢你的时间。",
+   "start": 64.2,
+   "end": 67.783,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 2.917,
+   "question_text": "好的，我们开始吧。",
+   "reply_start": 3.917,
+   "note": "寒暄",
+   "window_end": 6.609,
+   "id": "q1"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 6.619,
+   "question_end": 8.774,
+   "question_text": "请先做个自我介绍。",
+   "reply_start": 10.974,
+   "note": "指令式",
+   "window_end": 10.974,
+   "id": "q2"
+  },
+  {
+   "should_answer": false,
+   "turn_start": 18.438,
+   "question_end": 19.402,
+   "question_text": "嗯，不错。",
+   "reply_start": 20.402,
+   "note": "评价",
+   "window_end": 22.618,
+   "id": "q3"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 22.628,
+   "question_end": 26.449,
+   "question_text": "你在这个项目里最大的挑战是什么？",
+   "reply_start": 28.949,
+   "note": "提问",
+   "window_end": 28.949,
+   "id": "q4"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 37.974,
+   "question_end": 43.069,
+   "question_text": "那你是怎么解决的，效果怎么样？",
+   "reply_start": 45.569,
+   "note": "半截追问",
+   "window_end": 45.569,
+   "id": "q5"
+  },
+  {
+   "should_answer": true,
+   "turn_start": 52.557,
+   "question_end": 55.188,
+   "question_text": "你有什么想问我们的吗？",
+   "reply_start": 57.688,
+   "note": "反问",
+   "window_end": 57.688,
+   "id": "q6"
+  },
+  {
+   "should_answer": false,
+   "turn_start": 64.2,
+   "question_end": 67.783,
+   "question_text": "好的，今天就到这里，谢谢你的时间。",
+   "reply_start": null,
+   "note": "结束语",
+   "window_end": 75.783,
+   "id": "q7"
+  }
+ ]
+}

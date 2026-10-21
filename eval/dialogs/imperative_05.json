@@ -1,0 +1,35 @@
+{
+ "id": "imperative_05",
+ "category": "imperative",
+ "lang": "en",
+ "description": "没有疑问词/问号的指令式提问，应回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Tell me about a time you led a team.",
+   "start": 1.0,
+   "end": 4.583,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Sure, let me start from the big picture.",
+   "start": 7.083,
+   "end": 10.296,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": true,
+   "turn_start": 1.0,
+   "question_end": 4.583,
+   "question_text": "Tell me about a time you led a team.",
+   "reply_start": 7.083,
+   "note": "指令式",
+   "window_end": 7.083,
+   "id": "q1"
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "id": "chitchat_03",
+ "category": "chitchat",
+ "lang": "zh",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "不错，这个想法挺有意思的。",
+   "start": 1.0,
+   "end": 3.869,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "谢谢您。",
+   "start": 5.069,
+   "end": 6.033,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 3.869,
+   "question_text": "不错，这个想法挺有意思的。",
+   "reply_start": 5.069,
+   "note": "寒暄/陈述",
+   "window_end": 13.069,
+   "id": "q1"
+  }
+ ]
+}

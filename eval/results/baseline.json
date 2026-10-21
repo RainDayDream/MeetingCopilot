@@ -1,0 +1,1060 @@
+{
+ "generated_at": "2026-10-15T17:06:16+00:00",
+ "git": {
+  "commit": "3a438e5",
+  "branch": "overnight",
+  "dirty": true
+ },
+ "dataset": {
+  "dialogs": 59,
+  "expected_turns": 80,
+  "should_answer": 60,
+  "non_questions": 20
+ },
+ "trigger": {
+  "asr_timing_model": {
+   "asr_latency_s": 0.7,
+   "mic_min_speech_s": 0.6,
+   "partial_interval_s": 2,
+   "sys_min_speech_s": 0.3,
+   "vad_silence_s": 0.8
+  },
+  "by_category": {
+   "backchannel": {
+    "duplicate_triggers": 4,
+    "false_answer": 0,
+    "latency_p50_s": 1.549999911308289,
+    "latency_p95_s": 1.54999993610382,
+    "latency_samples": 4,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 4,
+    "premature_rate": 1,
+    "should_answer": 4,
+    "stray_triggers": 0,
+    "total_triggers": 8
+   },
+   "chitchat": {
+    "duplicate_triggers": 0,
+    "false_answer": 7,
+    "false_answer_rate": 1,
+    "latency_samples": 0,
+    "miss": 0,
+    "non_questions": 7,
+    "premature": 0,
+    "should_answer": 0,
+    "stray_triggers": 0,
+    "total_triggers": 7
+   },
+   "echo": {
+    "duplicate_triggers": 0,
+    "false_answer": 0,
+    "latency_samples": 0,
+    "miss": 5,
+    "miss_rate": 1,
+    "non_questions": 0,
+    "premature": 0,
+    "premature_rate": 0,
+    "should_answer": 5,
+    "stray_triggers": 0,
+    "total_triggers": 0
+   },
+   "english": {
+    "duplicate_triggers": 0,
+    "false_answer": 0,
+    "latency_p50_s": 1.5500000066757202,
+    "latency_p95_s": 1.5500000114440917,
+    "latency_samples": 4,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 0,
+    "premature_rate": 0,
+    "should_answer": 4,
+    "stray_triggers": 0,
+    "total_triggers": 4
+   },
+   "full_interview": {
+    "duplicate_triggers": 1,
+    "false_answer": 7,
+    "false_answer_rate": 0.875,
+    "latency_p50_s": 1.5499999532699569,
+    "latency_p95_s": 1.5500000009536752,
+    "latency_samples": 11,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 8,
+    "premature": 1,
+    "premature_rate": 0.09090909090909091,
+    "should_answer": 11,
+    "stray_triggers": 0,
+    "total_triggers": 19
+   },
+   "half_followup": {
+    "duplicate_triggers": 4,
+    "false_answer": 0,
+    "latency_p50_s": 1.5499999551773072,
+    "latency_p95_s": 1.5499999990463253,
+    "latency_samples": 10,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 4,
+    "premature_rate": 0.4,
+    "should_answer": 10,
+    "stray_triggers": 0,
+    "total_triggers": 14
+   },
+   "imperative": {
+    "duplicate_triggers": 0,
+    "false_answer": 0,
+    "latency_p50_s": 1.5499999322891238,
+    "latency_p95_s": 1.5500000076293947,
+    "latency_samples": 6,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 0,
+    "premature_rate": 0,
+    "should_answer": 6,
+    "stray_triggers": 0,
+    "total_triggers": 6
+   },
+   "long_technical": {
+    "duplicate_triggers": 6,
+    "false_answer": 0,
+    "latency_p50_s": 1.5499999437332157,
+    "latency_p95_s": 1.5499999532699587,
+    "latency_samples": 3,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 3,
+    "premature_rate": 1,
+    "should_answer": 3,
+    "stray_triggers": 0,
+    "total_triggers": 9
+   },
+   "me_interrupt": {
+    "duplicate_triggers": 0,
+    "false_answer": 5,
+    "false_answer_rate": 1,
+    "latency_samples": 0,
+    "miss": 0,
+    "non_questions": 5,
+    "premature": 0,
+    "should_answer": 0,
+    "stray_triggers": 0,
+    "total_triggers": 5
+   },
+   "mixed_lang": {
+    "duplicate_triggers": 0,
+    "false_answer": 0,
+    "latency_p50_s": 1.549999959945679,
+    "latency_p95_s": 1.549999984741211,
+    "latency_samples": 5,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 0,
+    "premature_rate": 0,
+    "should_answer": 5,
+    "stray_triggers": 0,
+    "total_triggers": 5
+   },
+   "multi_question": {
+    "duplicate_triggers": 7,
+    "false_answer": 0,
+    "latency_p50_s": 1.5499999866485599,
+    "latency_p95_s": 1.5500000095367428,
+    "latency_samples": 6,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 6,
+    "premature_rate": 1,
+    "should_answer": 6,
+    "stray_triggers": 0,
+    "total_triggers": 13
+   },
+   "think_pause": {
+    "duplicate_triggers": 6,
+    "false_answer": 0,
+    "latency_p50_s": 1.549999984741211,
+    "latency_p95_s": 1.5500000028610224,
+    "latency_samples": 6,
+    "miss": 0,
+    "miss_rate": 0,
+    "non_questions": 0,
+    "premature": 6,
+    "premature_rate": 1,
+    "should_answer": 6,
+    "stray_triggers": 0,
+    "total_triggers": 12
+   }
+  },
+  "duplicate_triggers": 28,
+  "false_answer": 19,
+  "false_answer_rate": 0.95,
+  "latency_p50_s": 1.5499999504089357,
+  "latency_p95_s": 1.5500000076293947,
+  "latency_samples": 55,
+  "miss": 5,
+  "miss_rate": 0.08333333333333333,
+  "non_questions": 20,
+  "premature": 24,
+  "premature_rate": 0.4,
+  "sensitivity_sweep": {
+   "0": {
+    "duplicate_triggers": 29,
+    "false_answer": 19,
+    "false_answer_rate": 0.95,
+    "latency_p50_s": 1.5499999504089357,
+    "latency_p95_s": 1.5500000076293947,
+    "latency_samples": 55,
+    "miss": 5,
+    "miss_rate": 0.08333333333333333,
+    "non_questions": 20,
+    "premature": 24,
+    "premature_rate": 0.4,
+    "should_answer": 60,
+    "stray_triggers": 0,
+    "total_triggers": 103
+   },
+   "2": {
+    "duplicate_triggers": 26,
+    "false_answer": 19,
+    "false_answer_rate": 0.95,
+    "latency_p50_s": 1.5499999570846557,
+    "latency_p95_s": 2.4999999713897707,
+    "latency_samples": 52,
+    "miss": 8,
+    "miss_rate": 0.13333333333333333,
+    "non_questions": 20,
+    "premature": 22,
+    "premature_rate": 0.36666666666666664,
+    "should_answer": 60,
+    "stray_triggers": 3,
+    "total_triggers": 100
+   }
+  },
+  "should_answer": 60,
+  "stray_triggers": 0,
+  "total_triggers": 102
+ },
+ "trigger_per_dialog": {
+  "backchannel_01": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    6.522,
+    9.243
+   ]
+  },
+  "backchannel_02": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.657,
+    10.917
+   ]
+  },
+  "backchannel_03": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    4.652,
+    8.424
+   ]
+  },
+  "backchannel_04": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    4.705,
+    9.526
+   ]
+  },
+  "chitchat_01": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.467
+   ]
+  },
+  "chitchat_02": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.895
+   ]
+  },
+  "chitchat_03": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.419
+   ]
+  },
+  "chitchat_04": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.419
+   ]
+  },
+  "chitchat_05": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    7.244
+   ]
+  },
+  "chitchat_06": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    6.133
+   ]
+  },
+  "chitchat_07": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.943
+   ]
+  },
+  "echo_01": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 1,
+   "premature": 0,
+   "stray": 0,
+   "triggers": []
+  },
+  "echo_02": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 1,
+   "premature": 0,
+   "stray": 0,
+   "triggers": []
+  },
+  "echo_03": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 1,
+   "premature": 0,
+   "stray": 0,
+   "triggers": []
+  },
+  "echo_04": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 1,
+   "premature": 0,
+   "stray": 0,
+   "triggers": []
+  },
+  "echo_05": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 1,
+   "premature": 0,
+   "stray": 0,
+   "triggers": []
+  },
+  "english_01": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.555
+   ]
+  },
+  "english_02": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.652
+   ]
+  },
+  "english_03": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.763
+   ]
+  },
+  "english_04": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.393
+   ]
+  },
+  "full_interview_01": {
+   "duplicates": 1,
+   "false_answer": 2,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    4.467,
+    10.324,
+    27.999,
+    42.629,
+    44.619,
+    56.738,
+    69.333
+   ]
+  },
+  "full_interview_02": {
+   "duplicates": 0,
+   "false_answer": 3,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.075,
+    12.15,
+    22.861,
+    32.176,
+    38.536,
+    47.957
+   ]
+  },
+  "full_interview_03": {
+   "duplicates": 0,
+   "false_answer": 2,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.652,
+    11.355,
+    22.892,
+    32.577,
+    38.169,
+    48.966
+   ]
+  },
+  "half_followup_01": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    6.133,
+    20.869,
+    23.674
+   ]
+  },
+  "half_followup_02": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.551,
+    19.705,
+    22.548
+   ]
+  },
+  "half_followup_03": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.657,
+    19.244
+   ]
+  },
+  "half_followup_04": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.022,
+    17.509,
+    19.42
+   ]
+  },
+  "half_followup_05": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.657,
+    19.837,
+    23.48
+   ]
+  },
+  "imperative_01": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    3.809
+   ]
+  },
+  "imperative_02": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.467
+   ]
+  },
+  "imperative_03": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    4.705
+   ]
+  },
+  "imperative_04": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    3.945
+   ]
+  },
+  "imperative_05": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    6.133
+   ]
+  },
+  "imperative_06": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    6.371
+   ]
+  },
+  "long_technical_01": {
+   "duplicates": 2,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    7.8,
+    11.934,
+    14.713
+   ]
+  },
+  "long_technical_02": {
+   "duplicates": 2,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.895,
+    11.14,
+    15.009
+   ]
+  },
+  "long_technical_03": {
+   "duplicates": 2,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.393,
+    9.806,
+    14.249
+   ]
+  },
+  "me_interrupt_01": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.772
+   ]
+  },
+  "me_interrupt_02": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.893
+   ]
+  },
+  "me_interrupt_03": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.181
+   ]
+  },
+  "me_interrupt_04": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.895
+   ]
+  },
+  "me_interrupt_05": {
+   "duplicates": 0,
+   "false_answer": 1,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.393
+   ]
+  },
+  "mixed_01": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    7.316
+   ]
+  },
+  "mixed_02": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.684
+   ]
+  },
+  "mixed_03": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    7.142
+   ]
+  },
+  "mixed_04": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    8.356
+   ]
+  },
+  "mixed_05": {
+   "duplicates": 0,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 0,
+   "stray": 0,
+   "triggers": [
+    5.446
+   ]
+  },
+  "multi_question_01": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    4.297,
+    7.88
+   ]
+  },
+  "multi_question_02": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.181,
+    9.964
+   ]
+  },
+  "multi_question_03": {
+   "duplicates": 2,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.657,
+    8.336,
+    12.093
+   ]
+  },
+  "multi_question_04": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.393,
+    8.865
+   ]
+  },
+  "multi_question_05": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.419,
+    9.35
+   ]
+  },
+  "multi_question_06": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.181,
+    7.045
+   ]
+  },
+  "think_pause_01": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    7.312,
+    12.222
+   ]
+  },
+  "think_pause_02": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    7.083,
+    9.964
+   ]
+  },
+  "think_pause_03": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.419,
+    11.726
+   ]
+  },
+  "think_pause_04": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    7.321,
+    12.316
+   ]
+  },
+  "think_pause_05": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    7.454,
+    11.547
+   ]
+  },
+  "think_pause_06": {
+   "duplicates": 1,
+   "false_answer": 0,
+   "miss": 0,
+   "premature": 1,
+   "stray": 0,
+   "triggers": [
+    5.181,
+    10.364
+   ]
+  }
+ },
+ "asr": {
+  "cer_me_channel": 0.08633093525179857,
+  "cer_mixed": 0.2564102564102564,
+  "cer_mixed_chars": 78,
+  "cer_zh": 0.008849557522123894,
+  "cer_zh_chars": 113,
+  "clips": {
+   "backchannel_01": {
+    "echo_clip": false,
+    "hyp_sys": "我想了解一下,你在这个项目里。具体负责的是哪一个模块?",
+    "lang": "zh",
+    "mic_echo_like": 0,
+    "mic_hallucination": 1,
+    "mic_lines": [
+     "",
+     "好的,我来回答这个问题。"
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "嗯好的，我来回答这个问题。",
+    "ref_sys": "我想了解一下，你在这个项目里具体负责的是哪一个模块？"
+   },
+   "echo_01": {
+    "echo_clip": true,
+    "hyp_sys": "你能介绍一下你的项目吗?",
+    "lang": "zh",
+    "mic_echo_like": 1,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "你能介绍一下你的项目吗?",
+     "好的,我来回答。"
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "好的，我来回答。",
+    "ref_sys": "你能介绍一下你的项目吗？"
+   },
+   "english_01": {
+    "echo_clip": false,
+    "hyp_sys": "Could you tell me about a challenging project you worked on?",
+    "lang": "en",
+    "mic_echo_like": 0,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "Sure, let me explain."
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "Sure, let me explain.",
+    "ref_sys": "Could you tell me about a challenging project you worked on?"
+   },
+   "imperative_01": {
+    "echo_clip": false,
+    "hyp_sys": "讲讲你的项目。",
+    "lang": "zh",
+    "mic_echo_like": 0,
+    "mic_hallucination": 2,
+    "mic_lines": [
+     "",
+     "好的,我先从整体说起。",
+     ""
+    ],
+    "mic_noise": true,
+    "mic_real": 1,
+    "ref_me": "好的，我先从整体说起。",
+    "ref_sys": "讲讲你的项目。"
+   },
+   "imperative_04": {
+    "echo_clip": false,
+    "hyp_sys": "Walk me through your resume.",
+    "lang": "en",
+    "mic_echo_like": 0,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "Sure, let me start from the big picture."
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "Sure, let me start from the big picture.",
+    "ref_sys": "Walk me through your resume."
+   },
+   "me_interrupt_01": {
+    "echo_clip": false,
+    "hyp_sys": "你能介绍一下这个项目的整体架构吗?",
+    "lang": "zh",
+    "mic_echo_like": 0,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "好的,这个项目整体分为接入层、服务层和数据层三层。"
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "好的，这个项目整体分为接入层、服务层和数据层三层。",
+    "ref_sys": "你能介绍一下这个项目的整体架构吗？"
+   },
+   "mixed_01": {
+    "echo_clip": false,
+    "hyp_sys": "你在项目里用的Transformer和Attention机制是怎么work的?",
+    "lang": "mixed",
+    "mic_echo_like": 0,
+    "mic_hallucination": 1,
+    "mic_lines": [
+     "",
+     "好的,我来解释一下。"
+    ],
+    "mic_noise": true,
+    "mic_real": 1,
+    "ref_me": "好的，我来解释一下。",
+    "ref_sys": "你在项目里用的 transformer 和 attention 机制是怎么 work 的？"
+   },
+   "mixed_03": {
+    "echo_clip": false,
+    "hyp_sys": "能不能讲讲你对Microsoft Service和Munality的Treat of the Leisure",
+    "lang": "mixed",
+    "mic_echo_like": 0,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "好的,我来解释一下。"
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "好的，我来解释一下。",
+    "ref_sys": "能不能讲讲你对 microservice 和 monolith 的 trade-off 的理解？"
+   },
+   "multi_question_01": {
+    "echo_clip": false,
+    "hyp_sys": "你们团队有多少人?另外你们的迭代周期是怎样的?",
+    "lang": "zh",
+    "mic_echo_like": 0,
+    "mic_hallucination": 0,
+    "mic_lines": [
+     "好的,我一个一个来回答。"
+    ],
+    "mic_noise": false,
+    "mic_real": 1,
+    "ref_me": "好的，我一个一个来回答。",
+    "ref_sys": "你们团队有多少人？另外你们的迭代周期是怎样的？"
+   },
+   "think_pause_01": {
+    "echo_clip": false,
+    "hyp_sys": "我们先来看看你的项目。问,我想问的是你在这个项目里遇到的最大技术挑战是什么?",
+    "lang": "zh",
+    "mic_echo_like": 0,
+    "mic_hallucination": 3,
+    "mic_lines": [
+     "",
+     "",
+     "",
+     "好的,这个问题我来说一下,主要有几个方面。"
+    ],
+    "mic_noise": true,
+    "mic_real": 1,
+    "ref_me": "好的，这个问题我来说一下，主要有几个方面。",
+    "ref_sys": "我们先来看看你的项目，嗯……我想问的是你在这个项目里遇到的最大技术挑战是什么？"
+   }
+  },
+  "echo_leak_rate": 1,
+  "echo_segments": 1,
+  "mic_hallucination_lines": 7,
+  "mic_hallucination_lines_noise_clips": 6,
+  "model": "small",
+  "status": "ok",
+  "transcribe_latency_p50_s": 0.37389302253723145,
+  "transcribe_latency_p95_s": 0.4508270025253296,
+  "wer_en": 0,
+  "wer_en_words": 16
+ },
+ "context": {
+  "avg_prompt_chars": 523.0588235294117,
+  "current_question_checked": 55,
+  "current_question_marked": 0.9454545454545454,
+  "current_question_unmarked": [
+   "backchannel_03/q1",
+   "half_followup_03/q2",
+   "long_technical_01/q1"
+  ],
+  "prefix_pairs": 48,
+  "prefix_stability": 0.8125,
+  "prompts": 102
+ },
+ "quality": {
+  "status": "skipped",
+  "reason": "未启用（EVAL_QUALITY=1 且设置 API 环境变量时才运行）"
+ }
+}

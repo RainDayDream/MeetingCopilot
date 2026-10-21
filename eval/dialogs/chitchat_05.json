@@ -1,0 +1,35 @@
+{
+ "id": "chitchat_05",
+ "category": "chitchat",
+ "lang": "en",
+ "description": "寒暄、陈述、过渡语，不需要回答",
+ "audio": null,
+ "events": [
+  {
+   "speaker": "对方",
+   "text": "Thanks for joining us today, we will get started in a moment.",
+   "start": 1.0,
+   "end": 5.694,
+   "kind": "speech"
+  },
+  {
+   "speaker": "我",
+   "text": "Thank you, happy to be here.",
+   "start": 6.894,
+   "end": 9.366,
+   "kind": "speech"
+  }
+ ],
+ "expected": [
+  {
+   "should_answer": false,
+   "turn_start": 1.0,
+   "question_end": 5.694,
+   "question_text": "Thanks for joining us today, we will get started in a moment.",
+   "reply_start": 6.894,
+   "note": "寒暄/陈述",
+   "window_end": 14.894,
+   "id": "q1"
+  }
+ ]
+}
