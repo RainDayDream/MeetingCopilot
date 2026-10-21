@@ -20,7 +20,7 @@ struct MeetingCopilotApp: App {
         WindowGroup("MeetingCopilot") {
             ContentView()
                 .environmentObject(model)
-                .frame(minWidth: 920, minHeight: 560)
+                .frame(minWidth: 720, minHeight: 500)
         }
     }
 }
@@ -85,43 +85,166 @@ struct ContentView: View {
     }
 
     private var toolbar: some View {
+        ViewThatFits(in: .horizontal) {
+            fullToolbar.fixedSize(horizontal: true, vertical: false)
+            compactToolbar
+        }
+        .padding(10)
+    }
+
+    private var fullToolbar: some View {
         HStack(spacing: 10) {
-            Button {
-                Task { m.isListening ? await m.stop() : await m.start() }
-            } label: {
-                Label(m.isListening ? "停止监听" : "开始监听", systemImage: m.isListening ? "stop.circle.fill" : "record.circle")
-            }
-            .tint(m.isListening ? .red : .accentColor)
-            .disabled(m.isStarting)
-            Circle().fill(m.isListening ? Color.green : Color.gray).frame(width: 8, height: 8)
-            Text(m.status).font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.tail).frame(maxWidth: 160, alignment: .leading)
+            startStopButton
+            statusView
             if m.isListening {
                 LevelBar(title: "对方", level: m.sysLevel, count: m.sysBuffers)
                 if m.settings.captureMic { LevelBar(title: "我", level: m.micLevel, count: nil) }
             }
-            Spacer()
-            Picker("语言", selection: Binding(get: { m.settings.asrLanguage ?? "auto" },
-                                             set: { m.setLanguage($0 == "auto" ? nil : $0) })) {
-                Text("自动").tag("auto"); Text("中文").tag("zh"); Text("English").tag("en")
-            }.frame(width: 110).help("自动：识别中文/英文/中英混杂。固定语言可减少误判")
-            Picker("预设", selection: Binding(get: { m.settings.selectedPreset ?? m.currentPreset.id },
-                                             set: { m.settings.selectedPreset = $0 })) {
-                ForEach(m.settings.presets) { Text($0.name).tag($0.id) }
-            }.frame(width: 170)
-            Button { send() } label: { Label("立即回答", systemImage: "sparkles") }
-                .keyboardShortcut(.return, modifiers: .command)
-                .help("⌘↩；输入框有内容时一并发送。全局快捷键 \(m.hotkeyLabel)")
-            Toggle("自动回答", isOn: $m.settings.autoAnswer).toggleStyle(.switch).fixedSize().help("检测到对方提问时自动回答")
+            Spacer(minLength: 20)
+            languagePicker
+            presetPicker.frame(width: 160)
+            answerButton
+            autoToggle
             Button { m.previewScreenshot() } label: { Image(systemName: "camera.viewfinder") }
                 .help("预览将被截取的屏幕")
             Button { m.sendToExternal() } label: { Image(systemName: "arrow.up.forward.app") }
                 .help("复制提示词并打开外部 AI 页面")
-            Toggle(isOn: Binding(get: { m.settings.alwaysOnTop ?? false }, set: { m.settings.alwaysOnTop = $0 })) { Image(systemName: "pin") }.toggleStyle(.button).help("窗口置顶")
-            Button { m.exportTranscript() } label: { Image(systemName: "square.and.arrow.up") }.help("导出转写")
-            Button { m.clear() } label: { Image(systemName: "trash") }.help("清空")
-            Button { showSettings = true } label: { Image(systemName: "gearshape") }
+            pinToggle
+            Button { m.exportTranscript() } label: { Image(systemName: "square.and.arrow.up") }
+                .help("导出转写")
+            Button { m.clear() } label: { Image(systemName: "trash") }
+                .help("清空转写")
+            settingsButton
         }
-        .padding(10)
+    }
+
+    /// 窄窗口只保留高频操作；语言/截图/导出/设置收进“更多”。
+    private var compactToolbar: some View {
+        HStack(spacing: 8) {
+            startStopButton
+            statusView.frame(maxWidth: 120)
+            Spacer(minLength: 4)
+            presetPicker.frame(width: 140)
+            answerButton
+            Toggle(isOn: $m.settings.autoAnswer) {
+                Image(systemName: "bolt.fill")
+            }
+            .toggleStyle(.button)
+            .help("自动回答")
+            moreMenu
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var startStopButton: some View {
+        Button {
+            Task { m.isListening ? await m.stop() : await m.start() }
+        } label: {
+            Label(m.isListening ? "停止监听" : "开始监听",
+                  systemImage: m.isListening ? "stop.circle.fill" : "record.circle")
+        }
+        .tint(m.isListening ? .red : .accentColor)
+        .disabled(m.isStarting)
+    }
+
+    private var statusView: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(m.isListening ? Color.green : Color.gray)
+                .frame(width: 8, height: 8)
+            Text(m.status)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .help(m.status)
+        }
+        .frame(maxWidth: 160, alignment: .leading)
+    }
+
+    private var languageBinding: Binding<String> {
+        Binding(get: { m.settings.asrLanguage ?? "auto" },
+                set: { m.setLanguage($0 == "auto" ? nil : $0) })
+    }
+
+    private var presetBinding: Binding<UUID> {
+        Binding(get: { m.settings.selectedPreset ?? m.currentPreset.id },
+                set: { m.settings.selectedPreset = $0 })
+    }
+
+    private var languagePicker: some View {
+        Picker("语言", selection: languageBinding) {
+            Text("自动").tag("auto"); Text("中文").tag("zh"); Text("English").tag("en")
+        }
+        .frame(width: 105)
+        .help("自动：识别中文/英文/中英混杂。固定语言可减少误判")
+    }
+
+    private var presetPicker: some View {
+        Picker("预设", selection: presetBinding) {
+            ForEach(m.settings.presets) { Text($0.name).tag($0.id) }
+        }
+        .help("选择当前任务的预设提示词")
+    }
+
+    private var answerButton: some View {
+        Button { send() } label: { Label("立即回答", systemImage: "sparkles") }
+            .keyboardShortcut(.return, modifiers: .command)
+            .help("⌘↩；输入框有内容时一并发送。全局快捷键 \(m.hotkeyLabel)")
+    }
+
+    private var autoToggle: some View {
+        Toggle("自动回答", isOn: $m.settings.autoAnswer)
+            .toggleStyle(.switch)
+            .fixedSize()
+            .help("检测到对方提问时自动回答")
+    }
+
+    private var pinToggle: some View {
+        Toggle(isOn: Binding(get: { m.settings.alwaysOnTop ?? false },
+                             set: { m.settings.alwaysOnTop = $0 })) {
+            Image(systemName: "pin")
+        }
+        .toggleStyle(.button)
+        .help("窗口置顶")
+    }
+
+    private var settingsButton: some View {
+        Button { showSettings = true } label: { Image(systemName: "gearshape") }
+            .help("设置")
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Picker("语言", selection: languageBinding) {
+                Text("自动").tag("auto"); Text("中文").tag("zh"); Text("English").tag("en")
+            }
+            Divider()
+            Button { m.previewScreenshot() } label: {
+                Label("预览屏幕", systemImage: "camera.viewfinder")
+            }
+            Button { m.sendToExternal() } label: {
+                Label("外部 AI 页面", systemImage: "arrow.up.forward.app")
+            }
+            Button { m.exportTranscript() } label: {
+                Label("导出转写", systemImage: "square.and.arrow.up")
+            }
+            Button { m.clear() } label: {
+                Label("清空转写", systemImage: "trash")
+            }
+            Divider()
+            Toggle("窗口置顶", isOn: Binding(get: { m.settings.alwaysOnTop ?? false },
+                                            set: { m.settings.alwaysOnTop = $0 }))
+            Toggle("对屏幕共享隐藏", isOn: Binding(get: { m.settings.hideFromCapture ?? false },
+                                              set: { m.settings.hideFromCapture = $0 }))
+            Divider()
+            Button { showSettings = true } label: {
+                Label("设置…", systemImage: "gearshape")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+        }
+        .help("更多")
     }
 
     private var transcriptPane: some View {
@@ -239,29 +362,69 @@ struct SettingsView: View {
             }
             HStack { Spacer(); Button("完成") { dismiss() }.keyboardShortcut(.defaultAction) }.padding(10)
         }
-        .frame(width: 680, height: 560)
+        .frame(minWidth: 600, idealWidth: 700, minHeight: 420, idealHeight: 560)
         .onDisappear { m.saveAPIKey() }
     }
 
+    /// 设置项统一“标签在上、控件在下”，避免 macOS Form 的长标签列把内容挤出窗口。
+    private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func toggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var api: some View {
-        Form {
-            Picker("接口类型", selection: Binding(get: { m.settings.provider }, set: { m.switchProvider($0) })) {
-                ForEach(Provider.allCases) { Text($0.label).tag($0) }
-            }
-            TextField("Base URL", text: $m.settings.baseURL)
-            TextField("模型", text: $m.settings.model)
-            SecureField("API Key（存入钥匙串；本机 Ollama 可留空）", text: $m.apiKey)
-            Text("非本机地址必须 https。Ollama 示例：类型选 OpenAI 兼容，Base URL 填 http://localhost:11434/v1。使用云端 API 时，转写文本与截图会发送给该服务商。")
-                .font(.caption).foregroundStyle(.secondary)
-            Toggle("提问时附带当前屏幕截图（需模型支持图片）", isOn: $m.settings.includeScreenshot)
-            Picker("截图哪个屏幕", selection: $m.settings.screenshotDisplay) {
-                Text("鼠标所在的屏幕").tag(UInt32?.none)
-                ForEach(NSScreen.screens, id: \.self) { sc in
-                    if let id = Screenshot.screenID(sc) { Text(sc.localizedName).tag(UInt32?.some(id)) }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                row("接口类型") {
+                    Picker("", selection: Binding(get: { m.settings.provider }, set: { m.switchProvider($0) })) {
+                        ForEach(Provider.allCases) { Text($0.label).tag($0) }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                }
+                row("Base URL") {
+                    TextField("", text: $m.settings.baseURL).textFieldStyle(.roundedBorder)
+                }
+                row("模型") {
+                    TextField("", text: $m.settings.model).textFieldStyle(.roundedBorder)
+                }
+                row("API Key（存入钥匙串；本机 Ollama 可留空）") {
+                    SecureField("留空表示不需要 Key", text: $m.apiKey).textFieldStyle(.roundedBorder)
+                }
+                Text("非本机地址必须 https。Ollama 示例：类型选 OpenAI 兼容，Base URL 填 http://localhost:11434/v1。使用云端 API 时，转写文本与截图会发送给该服务商。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                toggleRow("提问时附带屏幕截图（需模型支持图片）", isOn: $m.settings.includeScreenshot)
+                row("截图哪个屏幕") {
+                    Picker("", selection: $m.settings.screenshotDisplay) {
+                        Text("鼠标所在的屏幕").tag(UInt32?.none)
+                        ForEach(NSScreen.screens, id: \.self) { sc in
+                            if let id = Screenshot.screenID(sc) { Text(sc.localizedName).tag(UInt32?.some(id)) }
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                }
+                row("外部 AI 页面 URL") {
+                    TextField("", text: $m.settings.externalURL).textFieldStyle(.roundedBorder)
                 }
             }
-            TextField("外部 AI 页面 URL", text: $m.settings.externalURL)
-        }.padding()
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     private var prompts: some View {
@@ -281,56 +444,99 @@ struct SettingsView: View {
                         }
                     }
                 }
-            }.frame(width: 160)
-            VStack(alignment: .leading) {
-                if let i = m.settings.presets.firstIndex(where: { $0.id == sel }) {
-                    TextField("名称", text: $m.settings.presets[i].name)
-                    Text("预设提示词（追加在系统提示词之后）").font(.caption)
-                    TextEditor(text: $m.settings.presets[i].prompt)
-                        .font(.body).border(Color.gray.opacity(0.3))
-                    Toggle("使用完整转写（会后总结）", isOn: $m.settings.presets[i].useFullTranscript)
-                } else {
-                    Text("在左侧选择预设进行编辑").foregroundStyle(.secondary)
+            }.frame(width: 170)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 8) {
+                    if let i = m.settings.presets.firstIndex(where: { $0.id == sel }) {
+                        TextField("名称", text: $m.settings.presets[i].name).textFieldStyle(.roundedBorder)
+                        Text("预设提示词（追加在系统提示词之后）").font(.caption)
+                            .fixedSize(horizontal: false, vertical: true)
+                        TextEditor(text: $m.settings.presets[i].prompt)
+                            .font(.body).border(Color.gray.opacity(0.3))
+                            .frame(minHeight: 120)
+                        Toggle("使用完整转写（会后总结）", isOn: $m.settings.presets[i].useFullTranscript)
+                    } else {
+                        Text("在左侧选择预设进行编辑").foregroundStyle(.secondary)
+                    }
+                    Divider()
+                    Text("会议背景（岗位/简历要点/议题等，每次提问都会带上）").font(.caption)
+                        .fixedSize(horizontal: false, vertical: true)
+                    TextEditor(text: Binding(get: { m.settings.meetingBackground ?? "" }, set: { m.settings.meetingBackground = $0 }))
+                        .font(.body).border(Color.gray.opacity(0.3)).frame(height: 80)
+                    Text("系统提示词（全局）").font(.caption)
+                    TextEditor(text: $m.settings.systemPrompt).font(.body).border(Color.gray.opacity(0.3))
+                        .frame(height: 100)
+                    Button("恢复默认系统提示词") { m.settings.systemPrompt = Settings.defaultSystemPrompt }
                 }
-                Divider()
-                Text("会议背景（岗位/简历要点/议题等，每次提问都会带上）").font(.caption)
-                TextEditor(text: Binding(get: { m.settings.meetingBackground ?? "" }, set: { m.settings.meetingBackground = $0 }))
-                    .font(.body).border(Color.gray.opacity(0.3)).frame(height: 80)
-                Text("系统提示词（全局）").font(.caption)
-                TextEditor(text: $m.settings.systemPrompt).font(.body).border(Color.gray.opacity(0.3))
-                    .frame(height: 100)
-                Button("恢复默认系统提示词") { m.settings.systemPrompt = Settings.defaultSystemPrompt }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }.padding()
     }
 
     private var general: some View {
-        Form {
-            Picker("语音识别模型（本地 Whisper）", selection: Binding(get: { m.settings.whisperModel ?? "small" },
-                                                             set: { m.settings.whisperModel = $0 })) {
-                Text("tiny（约 75MB，最快，准确度低）").tag("tiny")
-                Text("base（约 140MB）").tag("base")
-                Text("small（约 460MB，默认）").tag("small")
-                Text("large-v3 turbo（约 630MB，最准，需要较好的 Mac）").tag("large-v3-v20240930_turbo_632MB")
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                row("识别模型（本地 Whisper）") {
+                    Picker("", selection: Binding(get: { m.settings.whisperModel ?? "small" },
+                                                  set: { m.settings.whisperModel = $0 })) {
+                        Text("tiny（约 75MB，最快，准确度低）").tag("tiny")
+                        Text("base（约 140MB）").tag("base")
+                        Text("small（约 460MB，默认）").tag("small")
+                        Text("large-v3 turbo（约 630MB，最准，需要较好的 Mac）").tag("large-v3-v20240930_turbo_632MB")
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                }
+                Text("首次使用某个模型需联网下载并优化，之后离线可用；切换模型后重新点“开始监听”。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                toggleRow("同时转写我的麦克风（标记为“我”）", isOn: $m.settings.captureMic)
+                row("自动回答灵敏度") {
+                    Picker("", selection: Binding(get: { m.settings.autoSensitivity ?? 1 },
+                                                  set: { m.settings.autoSensitivity = $0 })) {
+                        Text("灵敏（句末停顿约 0.8 秒）").tag(0)
+                        Text("标准（约 1.5 秒，默认）").tag(1)
+                        Text("稳妥（约 2.5 秒，减少抢答）").tag(2)
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.menu)
+                }
+                Text("句末是问号时约 0.5 秒内触发；没说完的半句会多等 1 秒。你开口回应后不会触发。每次提问都会带上整场双方对话。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("最近问答轮数（0 = 不带）")
+                        .font(.callout).foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("\(m.settings.historyTurns ?? 2) 次").monospacedDigit()
+                        Stepper("", value: Binding(get: { m.settings.historyTurns ?? 2 },
+                                                   set: { m.settings.historyTurns = $0 }), in: 0...6)
+                            .labelsHidden()
+                    }
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("整场对话上限")
+                        .font(.callout).foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("\((m.settings.maxContextChars ?? 150_000) / 1000) 千字").monospacedDigit()
+                        Stepper("", value: Binding(get: { (m.settings.maxContextChars ?? 150_000) / 10_000 },
+                                                   set: { m.settings.maxContextChars = $0 * 10_000 }), in: 2...50)
+                            .labelsHidden()
+                    }
+                    Text("超出时丢弃最早的对话").font(.caption2).foregroundStyle(.secondary)
+                }
+                ShortcutRecorder()
+                toggleRow("窗口置顶（默认关闭）", isOn: Binding(get: { m.settings.alwaysOnTop ?? false },
+                                                           set: { m.settings.alwaysOnTop = $0 }))
+                toggleRow("对屏幕共享隐藏窗口（默认关闭）", isOn: Binding(get: { m.settings.hideFromCapture ?? false },
+                                                                  set: { m.settings.hideFromCapture = $0 }))
+                Text("本 App 的截图始终排除自身窗口。新版 macOS 上“对屏幕共享隐藏”不一定对所有会议软件生效，共享屏幕前请自行确认。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            Text("首次使用某个模型需联网下载并优化，之后离线可用；切换模型后重新点“开始监听”。").font(.caption).foregroundStyle(.secondary)
-            Toggle("同时转写我的麦克风（标记为“我”）", isOn: $m.settings.captureMic)
-            Picker("自动回答：判断对方说完的灵敏度", selection: Binding(get: { m.settings.autoSensitivity ?? 1 }, set: { m.settings.autoSensitivity = $0 })) {
-                Text("灵敏（句末停顿约 0.8 秒）").tag(0)
-                Text("标准（约 1.5 秒，默认）").tag(1)
-                Text("稳妥（约 2.5 秒，减少抢答）").tag(2)
-            }
-            Text("句末是问号时约 0.5 秒内触发；没说完的半句会多等 1 秒。你开口回应后不会触发。每次提问都会带上整场双方对话。").font(.caption).foregroundStyle(.secondary)
-            Stepper("带入最近 \(m.settings.historyTurns ?? 2) 次问答作为上下文（0 = 不带）",
-                    value: Binding(get: { m.settings.historyTurns ?? 2 }, set: { m.settings.historyTurns = $0 }), in: 0...6)
-            Stepper("整场对话上限 \((m.settings.maxContextChars ?? 150_000) / 1000) 千字（超出时丢弃最早的）",
-                    value: Binding(get: { (m.settings.maxContextChars ?? 150_000) / 10_000 }, set: { m.settings.maxContextChars = $0 * 10_000 }), in: 2...50)
-            ShortcutRecorder()
-            Toggle("窗口置顶（默认关闭）", isOn: Binding(get: { m.settings.alwaysOnTop ?? false }, set: { m.settings.alwaysOnTop = $0 }))
-            Toggle("对截屏/录屏/屏幕共享隐藏本窗口（默认关闭）", isOn: Binding(get: { m.settings.hideFromCapture ?? false }, set: { m.settings.hideFromCapture = $0 }))
-            Text("本 App 的截图始终排除自身窗口。新版 macOS 上“对屏幕共享隐藏”不一定对所有会议软件生效，共享屏幕前请自行确认。")
-                .font(.caption).foregroundStyle(.secondary)
-        }.padding()
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 }
 
@@ -343,7 +549,7 @@ struct ImagePreview: View {
             Text(title).font(.headline)
             Image(nsImage: image).resizable().scaledToFit()
             Button("关闭") { dismiss() }.keyboardShortcut(.defaultAction)
-        }.padding().frame(width: 800, height: 520)
+        }.padding().frame(minWidth: 480, idealWidth: 800, minHeight: 340, idealHeight: 520)
     }
 }
 
