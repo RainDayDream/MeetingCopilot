@@ -170,17 +170,23 @@ public final class WhisperStream {
     private let voiceThreshold: Float
     private let minSpeech: Double
     private let sustainedSecs: Double?
+    private let transcriber: SegmentTranscriber
+    private let partialResults: Bool
     private var sustainedFired = false
     private var frames: [Bool] = []   // 最近 1 秒内每个 20ms 帧是否有声（不受采集缓冲区大小影响），只用于“持续有声”信号
     private var lastVoiced: Date?
 
-    /// 麦克风底噪/键盘声更多，阈值更高；系统音频较干净
-    public init(speaker: String, voiceThreshold: Float = 0.008, minSpeech: Double = 0.3, sustainedSecs: Double? = nil) {
+    /// 麦克风底噪/键盘声更多，阈值更高；系统音频较干净。
+    /// transcriber 默认本地 Whisper；云端模式传入 AliyunParaformerTranscriber，并关闭 partial（按段请求云端）。
+    public init(speaker: String, voiceThreshold: Float = 0.008, minSpeech: Double = 0.3, sustainedSecs: Double? = nil,
+                transcriber: SegmentTranscriber = LocalWhisperTranscriber(), partialResults: Bool = true) {
         self.speaker = speaker
         self.sustainedSecs = sustainedSecs
         self.voiceThreshold = voiceThreshold
         self.minSpeech = minSpeech
-        q = DispatchQueue(label: "mc.whisper.\(speaker)")
+        self.transcriber = transcriber
+        self.partialResults = partialResults
+        q = DispatchQueue(label: "mc.asr.\(speaker)")
     }
 
     public func start() { q.async { self.running = true } }
@@ -262,11 +268,12 @@ public final class WhisperStream {
     }
 
     private func partial() {
+        guard partialResults else { return }
         partialBusy = true
         inflight += 1
         let id = segID, start = segStart, snapshot = seg
         Task {
-            let text = try? await WhisperEngine.shared.transcribe(snapshot)
+            let text = try? await transcriber.transcribe(snapshot)
             q.async {
                 self.inflight -= 1
                 self.partialBusy = false
@@ -289,7 +296,7 @@ public final class WhisperStream {
         inflight += 1
         Task {
             do {
-                let text = try await WhisperEngine.shared.transcribe(samples)
+                let text = try await transcriber.transcribe(samples)
                 q.async { self.inflight -= 1; self.onUpdate?(SegmentUpdate(id: id, start: start, text: text, isFinal: true, end: end)) }
             } catch {
                 q.async {
