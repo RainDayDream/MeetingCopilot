@@ -108,9 +108,9 @@ struct ContentView: View {
                                              set: { m.settings.selectedPreset = $0 })) {
                 ForEach(m.settings.presets) { Text($0.name).tag($0.id) }
             }.frame(width: 170)
-            Button { m.ask() } label: { Label("立即回答", systemImage: "sparkles") }
+            Button { send() } label: { Label("立即回答", systemImage: "sparkles") }
                 .keyboardShortcut(.return, modifiers: .command)
-                .help("⌘↩，或全局快捷键 \(m.hotkeyLabel)")
+                .help("⌘↩；输入框有内容时一并发送。全局快捷键 \(m.hotkeyLabel)")
             Toggle("自动回答", isOn: $m.settings.autoAnswer).toggleStyle(.switch).fixedSize().help("检测到对方提问时自动回答")
             Button { m.previewScreenshot() } label: { Image(systemName: "camera.viewfinder") }
                 .help("预览将被截取的屏幕")
@@ -185,10 +185,24 @@ struct ContentView: View {
     }
 
     private var inputBar: some View {
-        HStack {
-            TextField("补充提问（可选，回车发送；留空则按预设直接回答）", text: $question)
-                .textFieldStyle(.roundedBorder)
-                .onSubmit { send() }
+        HStack(alignment: .bottom, spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                TextEditor(text: $question)
+                    .font(.body)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+                    .frame(height: 72)
+                if question.isEmpty {
+                    Text("补充提问（可选，回车换行；⌘↩ 发送；留空则按预设直接回答）")
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 8)
+                        .allowsHitTesting(false)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.gray.opacity(0.25)))
             Button("新话题") { m.newTopic() }
                 .help("之后的回答不再参考此前的问答（转写不受影响）")
             if m.isAsking {
