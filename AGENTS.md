@@ -67,11 +67,14 @@ pgrep -fl 'MeetingCopilot.app/Contents/MacOS/MeetingCopilot' || true
 - Commit：`<type>(<scope>): <subject>`，正文写 why / what / verify；trailer 写 `Task: T-xxx`、`Agent: dsh|claude`。
 - 一个 commit 只做一件事；不提交 `build/`、`.build/`、密钥、个人信息、本机绝对路径。
 - PR 标题同主 commit；正文含：功能、背景、改动、验证、影响/风险、人工验收、回滚。
-- 目标分支：有 `dev` 用 `dev`，否则 `main`。不自己合并，等用户审核。
+- 目标分支：有 `dev` 用 `dev`，否则 `main`。
+- **重要 PR 必须由用户审核并明确批准后才能合并**：发布/版本号、产品行为、触发/上下文/LLM、权限/安全、设置迁移、破坏性改动、大型 UI 改版。agent 不得自行合并，也不得用 auto-merge 绕过。
+- 普通文档/小修复（不涉及上述重要范围）默认由 agent 自行合并；合并前必须通过检查，合并后把 PR 链接发给用户。
 - **PR 创建或合并后，把链接发给用户。**
 
 ## 发布
 
+- 发布属于重要 PR：发布准备 PR 的合并、打 tag、创建 Release 都需要用户明确批准；agent 不自行合并发布 PR、不打正式 tag。
 - 功能 / 修复 / 版本号 / 版本历史先合入 `main`。
 - 在 `main` 的 commit 上打 tag（通常是 PR 合并提交），push tag。
 - 从 tag 检出干净目录构建，验证 app、`codesign`、DMG 后创建 GitHub Release。
