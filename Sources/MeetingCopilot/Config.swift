@@ -24,6 +24,17 @@ enum Provider: String, Codable, CaseIterable, Identifiable {
     }
 }
 
+enum ASRProvider: String, Codable, CaseIterable, Identifiable {
+    case local, aliyun
+    var id: String { rawValue }
+    var label: String {
+        switch self {
+        case .local: return "本地 Whisper（音频不出本机）"
+        case .aliyun: return "阿里云百炼 Paraformer（云端）"
+        }
+    }
+}
+
 struct Preset: Codable, Identifiable, Hashable {
     var id = UUID()
     var name: String
@@ -56,6 +67,7 @@ struct Settings: Codable {
     var model = Provider.openai.defaultModel
     var profiles: [String: ProviderProfile]? = nil
     var locale = "zh-CN"  // 旧字段，已不再使用
+    var asrProvider: ASRProvider = .local
     var asrLanguage: String? = nil      // nil = 自动检测（支持中英混杂）；"zh" / "en" 为固定
     var whisperModel: String? = nil     // nil = small
     var includeScreenshot = true
@@ -83,7 +95,7 @@ struct Settings: Codable {
     // ⚠️ 新增字段必须同时加入 CodingKeys，并在 init(from:) 里用 get(...) 读取（带默认值）。
     // 逐字段容错：升级版本新增/删除字段、或某个字段解析失败，都不会让其他设置（Base URL、模型、提示词…）被重置为默认值。
     enum CodingKeys: String, CodingKey {
-        case provider, baseURL, model, profiles, locale, asrLanguage, whisperModel, includeScreenshot, captureMic
+        case provider, baseURL, model, profiles, locale, asrProvider, asrLanguage, whisperModel, includeScreenshot, captureMic
         case screenshotDisplay, recentChars, maxContextChars, autoSensitivity, meetingBackground, historyTurns
         case autoAnswer, saveHistory, alwaysOnTop, hideFromCapture, hotkeyCode, hotkeyMods, hotkeyLabel, externalURL
         case systemPrompt, presets, selectedPreset
@@ -99,6 +111,7 @@ struct Settings: Codable {
         model = get(.model, model)
         profiles = opt(.profiles)
         locale = get(.locale, locale)
+        asrProvider = get(.asrProvider, asrProvider)
         asrLanguage = opt(.asrLanguage)
         whisperModel = opt(.whisperModel)
         includeScreenshot = get(.includeScreenshot, includeScreenshot)

@@ -26,6 +26,8 @@ final class AppModel: ObservableObject {
     @Published var apiKey: String
     /// 只在设置窗口关闭/切换接口时写钥匙串，避免输入每个字符都触发一次钥匙串访问
     func saveAPIKey() { Keychain.set(apiKey, account: settings.provider.rawValue) }
+    @Published var asrApiKey: String
+    func saveASRKey() { Keychain.set(asrApiKey, account: "asr.aliyun") }
     @Published var lines: [TranscriptLine] = []
     @Published var answers: [AnswerItem] = []
     @Published var history: [HistorySession] = []
@@ -61,6 +63,7 @@ final class AppModel: ObservableObject {
         let s = Settings.load()
         settings = s
         apiKey = Keychain.get(s.provider.rawValue)
+        asrApiKey = Keychain.get("asr.aliyun")
         history = historyStore.load()
         NotificationCenter.default.addObserver(forName: .captureStopped, object: nil, queue: .main) { [weak self] n in
             Task { @MainActor in
@@ -120,18 +123,31 @@ final class AppModel: ObservableObject {
         isStarting = true
         defer { isStarting = false }
         errorMessage = nil; recogError = nil; sysBuffers = 0
-        let engine = WhisperEngine.shared
-        await engine.setLanguage(settings.asrLanguage)
-        do {
-            try await engine.load(model: settings.whisperModel ?? "small") { [weak self] msg in
-                Task { @MainActor in self?.status = msg }
-            }
-        } catch {
-            errorMessage = "识别模型加载失败（首次需要联网下载）：\(error.localizedDescription)"
+        let cloud = settings.asrProvider == .aliyun
+        let cloudKey = asrApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cloud && cloudKey.isEmpty {
+            errorMessage = "请先在 设置 › 通用 填写阿里云百炼 API Key"
             status = "未开始"
             return
         }
-        let st = WhisperStream(speaker: "对方")
+        let transcriber: SegmentTranscriber
+        if cloud {
+            transcriber = AliyunParaformerTranscriber(apiKey: cloudKey, language: settings.asrLanguage)
+        } else {
+            let engine = WhisperEngine.shared
+            await engine.setLanguage(settings.asrLanguage)
+            do {
+                try await engine.load(model: settings.whisperModel ?? "small") { [weak self] msg in
+                    Task { @MainActor in self?.status = msg }
+                }
+            } catch {
+                errorMessage = "识别模型加载失败（首次需要联网下载）：\(error.localizedDescription)"
+                status = "未开始"
+                return
+            }
+            transcriber = LocalWhisperTranscriber()
+        }
+        let st = WhisperStream(speaker: "对方", transcriber: transcriber, partialResults: !cloud)
         st.onUpdate = { [weak self] u in Task { @MainActor in self?.handle("对方", u) } }
         st.onError = { [weak self] e in Task { @MainActor in self?.recogError = e } }
         st.onSpeechStart = { [weak self] in Task { @MainActor in self?.speechStarted("对方") } }
@@ -150,7 +166,8 @@ final class AppModel: ObservableObject {
             return
         }
         if settings.captureMic, await Permissions.microphone() {
-            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6, sustainedSecs: 0.5)
+            let mt = WhisperStream(speaker: "我", voiceThreshold: 0.02, minSpeech: 0.6, sustainedSecs: 0.5,
+                                   transcriber: transcriber, partialResults: !cloud)
             mt.onUpdate = { [weak self] u in Task { @MainActor in self?.handle("我", u) } }
             mt.onError = { [weak self] e in Task { @MainActor in self?.recogError = e } }
             mt.onSpeechSustained = { [weak self] in Task { @MainActor in self?.meSpeaking() } }
@@ -167,12 +184,26 @@ final class AppModel: ObservableObject {
             }
         }
         isListening = true
-        status = "监听中（本地 Whisper，\(settings.asrLanguage == nil ? "自动识别语言" : settings.asrLanguage!)）"
+        if cloud {
+            status = "监听中（阿里云 Paraformer 云端识别）"
+        } else {
+            status = "监听中（本地 Whisper，\(settings.asrLanguage == nil ? "自动识别语言" : settings.asrLanguage!)）"
+        }
     }
 
     func setLanguage(_ l: String?) {
         settings.asrLanguage = l
+        if settings.asrProvider == .aliyun {
+            if isListening { Task { await stop(); await start() } }
+            return
+        }
         Task { await WhisperEngine.shared.setLanguage(l) }
+    }
+
+    func setASRProvider(_ p: ASRProvider) {
+        guard p != settings.asrProvider else { return }
+        settings.asrProvider = p
+        if isListening { Task { await stop(); await start() } }
     }
 
     private func pushLevel(sys: Float?, mic: Float?) {

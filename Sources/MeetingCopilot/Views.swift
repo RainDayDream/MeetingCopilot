@@ -426,7 +426,7 @@ struct SettingsView: View {
             HStack { Spacer(); Button("完成") { dismiss() }.keyboardShortcut(.defaultAction) }.padding(10)
         }
         .frame(minWidth: 600, idealWidth: 700, minHeight: 420, idealHeight: 560)
-        .onDisappear { m.saveAPIKey() }
+        .onDisappear { m.saveAPIKey(); m.saveASRKey() }
     }
 
     /// 设置项统一“标签在上、控件在下”，避免 macOS Form 的长标签列把内容挤出窗口。
@@ -539,20 +539,38 @@ struct SettingsView: View {
     private var general: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                row("识别模型（本地 Whisper）") {
-                    Picker("", selection: Binding(get: { m.settings.whisperModel ?? "small" },
-                                                  set: { m.settings.whisperModel = $0 })) {
-                        Text("tiny（约 75MB，最快，准确度低）").tag("tiny")
-                        Text("base（约 140MB）").tag("base")
-                        Text("small（约 460MB，默认）").tag("small")
-                        Text("large-v3 turbo（约 630MB，最准，需要较好的 Mac）").tag("large-v3-v20240930_turbo_632MB")
+                row("语音识别服务") {
+                    Picker("", selection: Binding(get: { m.settings.asrProvider },
+                                                  set: { m.setASRProvider($0) })) {
+                        ForEach(ASRProvider.allCases) { Text($0.label).tag($0) }
                     }
                     .labelsHidden()
                     .pickerStyle(.menu)
                 }
-                Text("首次使用某个模型需联网下载并优化，之后离线可用；切换模型后重新点“开始监听”。")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                if m.settings.asrProvider == .aliyun {
+                    row("阿里云百炼 API Key") {
+                        SecureField("在百炼控制台创建 API Key", text: $m.asrApiKey)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    Text("云端模式会把“对方”和“我”两路音频发送到阿里云百炼（Paraformer 实时识别），按量计费；音频不保存。模型：paraformer-realtime-v2，语言跟随工具栏“语言”。")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } else {
+                    row("识别模型（本地 Whisper）") {
+                        Picker("", selection: Binding(get: { m.settings.whisperModel ?? "small" },
+                                                      set: { m.settings.whisperModel = $0 })) {
+                            Text("tiny（约 75MB，最快，准确度低）").tag("tiny")
+                            Text("base（约 140MB）").tag("base")
+                            Text("small（约 460MB，默认）").tag("small")
+                            Text("large-v3 turbo（约 630MB，最准，需要较好的 Mac）").tag("large-v3-v20240930_turbo_632MB")
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                    }
+                    Text("首次使用某个模型需联网下载并优化，之后离线可用；切换模型后重新点“开始监听”。")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
                 toggleRow("同时转写我的麦克风（标记为“我”）", isOn: $m.settings.captureMic)
                 toggleRow("保存历史记录（本地）", isOn: $m.settings.saveHistory)
                 Text("转写和回答保存在本机 Application Support/MeetingCopilot/history；关闭后不再写新记录，已有记录可在左侧历史栏删除。")
