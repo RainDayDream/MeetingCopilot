@@ -67,6 +67,9 @@ struct ContentView: View {
     @State private var showSettings = false
     @State private var showHistory = true
     @State private var confirmClearHistory = false
+    @State private var renamingID: UUID?
+    @State private var renameText = ""
+    @State private var showRename = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -116,6 +119,14 @@ struct ContentView: View {
                                 .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         }
                         .tag(s.id)
+                        .contextMenu {
+                            Button("重命名…") {
+                                renamingID = s.id
+                                renameText = s.title
+                                showRename = true
+                            }
+                            Button("删除", role: .destructive) { m.deleteHistory(s.id) }
+                        }
                     }
                 }
                 .listStyle(.sidebar)
@@ -137,6 +148,17 @@ struct ContentView: View {
             Button("取消", role: .cancel) {}
         } message: {
             Text("本机保存的所有历史转写和回答都会被删除，无法恢复。")
+        }
+        .alert("重命名历史记录", isPresented: $showRename) {
+            TextField("名称", text: $renameText)
+            Button("取消", role: .cancel) { renamingID = nil }
+            Button("保存") {
+                if let id = renamingID { m.renameHistory(id, title: renameText) }
+                renamingID = nil
+            }
+            .disabled(renameText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        } message: {
+            Text("输入一个便于识别的新名称。")
         }
     }
 

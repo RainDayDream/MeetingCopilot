@@ -416,6 +416,14 @@ final class AppModel: ObservableObject {
         status = "已打开历史记录"
     }
 
+    /// 重命名历史记录：只改标题，不改更新时间/排序；当前会话的标题会被后续保存保留。
+    func renameHistory(_ id: UUID, title: String) {
+        let t = String(title.trimmingCharacters(in: .whitespacesAndNewlines).prefix(80))
+        guard !t.isEmpty, let i = history.firstIndex(where: { $0.id == id }), history[i].title != t else { return }
+        history[i].title = t
+        historyStore.save(history[i])
+    }
+
     func deleteHistory(_ id: UUID) {
         historyStore.delete(id)
         history.removeAll { $0.id == id }

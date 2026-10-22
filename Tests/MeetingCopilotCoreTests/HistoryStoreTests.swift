@@ -31,6 +31,17 @@ struct HistoryStoreTests {
         #expect(store.load().isEmpty)
     }
 
+    @Test func updatedTitlePersists() throws {
+        let dir = tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let store = HistoryStore(directory: dir)
+        var s = session("旧标题", date: Date())
+        store.save(s)
+        s.title = "新标题"
+        store.save(s)
+        #expect(store.load().first?.title == "新标题")
+    }
+
     @Test func sortsNewestFirstAndTrims() throws {
         let dir = tempDir()
         defer { try? FileManager.default.removeItem(at: dir) }
