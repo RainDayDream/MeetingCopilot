@@ -6,6 +6,7 @@ macOS 原生小工具：在会议、面试、导师交流中，**实时捕获系
 
 ## 特性
 - **实时转写**：本地 Whisper（WhisperKit），自动识别中文 / 英文 / 中英混杂，音频不出本机。
+- **云端识别（可选）**：可切换到阿里云百炼 Paraformer 实时识别；云端模式会把音频发送到阿里云并按量计费，默认仍是本地 Whisper。
 - **多种 AI**：OpenAI 兼容接口（OpenAI、DeepSeek、OpenRouter、本机 Ollama 等）和 Anthropic Claude。
 - **自定义提示词**：全局系统提示词 + 任意数量的预设（内置：实时回答、速记要点、追问建议、屏幕解读、会后总结）。
 - **屏幕解读**：提问时可附带当前屏幕截图，答案旁显示本次使用的截图；可选择截取哪块屏幕。
@@ -42,6 +43,7 @@ open build/MeetingCopilot.app
 1. **配置模型**：右上角齿轮 › 模型 API。选接口类型，填 Base URL、模型名、API Key（本机 Ollama 可不填）。截图解读需要支持图片输入的模型（例如 GPT-4o、Claude；DeepSeek 等纯文本模型会自动退回仅用转写）。关闭设置窗口时 API Key 写入系统钥匙串。
 2. **授权**：点「开始监听」，在 系统设置 › 隐私与安全性 中允许「屏幕与系统音频录制」和「麦克风」。授权后**完全退出并重新打开**一次。
 3. **下载识别模型**：首次监听会联网下载 Whisper 模型（默认 small，约 460MB）并优化，需要 1–2 分钟，状态栏显示进度，之后离线可用。可在 设置 › 通用 换模型（tiny/base 更快，large-v3 turbo 最准但更吃资源）。
+   - 如改用云端识别：在 设置 › 通用 › 语音识别服务 选「阿里云百炼 Paraformer」，填入百炼 API Key；不需要下载本地模型，音频会发送到阿里云。
 
 ## 日常使用（完整说明见 [MANUAL.md](MANUAL.md)）
 1. 开会前点相机图标，确认将被截取的屏幕；多显示器可在 设置 › 通用 固定选屏。
@@ -55,12 +57,13 @@ open build/MeetingCopilot.app
 App 开启了沙盒，数据都在 `~/Library/Containers/com.meetingcopilot.MeetingCopilot/Data/`：
 - 识别模型：`Library/Application Support/MeetingCopilot/models/`
 - 设置与预设：`Library/Application Support/MeetingCopilot/settings.json`（不含 API Key）
-- API Key：系统钥匙串，条目名 `com.meetingcopilot.MeetingCopilot`
+- API Key：系统钥匙串，条目名 `com.meetingcopilot.MeetingCopilot`（模型 API 与云端语音识别各一条）
 - 转写文本只在内存中，音频和截图不保存；导出由你选择保存位置。
 
 ## 安全设计
 - **只读**：不申请辅助功能权限，不模拟键鼠，不写入或控制其他 App；仅用 ScreenCaptureKit 读取音频与截图。
 - **App Sandbox**：只能联网、用麦克风、读写你在保存面板里选定的文件。
+- **云端语音识别是可选项**：开启后音频会发送给阿里云百炼；默认本地 Whisper，音频不出本机。云端 API Key 只存系统钥匙串。
 - API 地址强制 https（本机 localhost 除外）。
 - 转写和截图作为「资料」送入模型，系统提示词要求忽略其中的指令；模型输出只显示，不会被执行。
 - 本 App 的截图始终排除自身窗口。
@@ -68,6 +71,7 @@ App 开启了沙盒，数据都在 `~/Library/Containers/com.meetingcopilot.Meet
 
 ## 注意与限制
 - 使用云端 API 时，转写文本和截图会发送给对应服务商；敏感场景请用本机 Ollama。
+- 云端语音识别会把音频发送给阿里云百炼，按量计费；按段识别，延迟取决于网络，不显示本地模式那样的实时临时文字。
 - 录音或转写他人发言前，请遵守当地法律和对方意愿（面试、导师交流请先告知）。
 - 语音识别：一次一句，句内中英混杂时英文术语偶有拼写偏差；多个远端说话人不区分，统一标为「对方」。
 - 外放时麦克风会收到对方声音，可能重复出现为「我」，建议戴耳机或在设置中关闭麦克风转写。
