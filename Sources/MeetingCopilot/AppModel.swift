@@ -10,10 +10,14 @@ struct AnswerItem: Identifiable {
     var text = ""
     var usedScreenshot = false
     var screenshot: NSImage?
-    let created = Date()
+    let created: Date
     /// 提问当时对方最近说的话，用于给后续追问提供上下文
     var context = ""
     var isOK: Bool { !text.isEmpty && !text.contains("⚠️") }
+
+    init(title: String, text: String = "", context: String = "", created: Date = Date()) {
+        self.title = title; self.text = text; self.context = context; self.created = created
+    }
 }
 
 @MainActor
@@ -24,6 +28,11 @@ final class AppModel: ObservableObject {
     func saveAPIKey() { Keychain.set(apiKey, account: settings.provider.rawValue) }
     @Published var lines: [TranscriptLine] = []
     @Published var answers: [AnswerItem] = []
+    @Published var history: [HistorySession] = []
+    @Published var selectedHistoryID: UUID?
+    private let historyStore = HistoryStore()
+    private var currentSessionID = UUID()
+    private var currentCreatedAt = Date()
     @Published var isListening = false
     @Published var isAsking = false
     @Published var status = "未开始"
@@ -52,6 +61,7 @@ final class AppModel: ObservableObject {
         let s = Settings.load()
         settings = s
         apiKey = Keychain.get(s.provider.rawValue)
+        history = historyStore.load()
         NotificationCenter.default.addObserver(forName: .captureStopped, object: nil, queue: .main) { [weak self] n in
             Task { @MainActor in
                 self?.errorMessage = "系统音频捕获已中断：\(n.object as? String ?? "")"
@@ -189,6 +199,7 @@ final class AppModel: ObservableObject {
         isListening = false
         sysLevel = 0; micLevel = 0; sysBuffers = 0
         status = "已停止"
+        persistCurrentSession()
     }
 
     private func handle(_ speaker: String, _ u: SegmentUpdate) {
@@ -202,6 +213,7 @@ final class AppModel: ObservableObject {
         // 自动回答：由 TurnDetector 判断是取消等待、重新安排，还是不处理
         perform(detector.onUpdate(lines: lines, speaker: speaker, text: u.text.trimmingCharacters(in: .whitespacesAndNewlines),
                                   isFinal: u.isFinal, end: u.end, autoEnabled: autoEnabled, sensitivity: settings.autoSensitivity))
+        if u.isFinal { persistCurrentSession() }
     }
 
     private var autoEnabled: Bool { settings.autoAnswer && (isListening || debugAuto) }
@@ -293,6 +305,7 @@ final class AppModel: ObservableObject {
                     self.answers.removeAll { $0.id == item.id }
                     self.status = "对方这一轮无需回答"
                 }
+                self.persistCurrentSession()
             }
         }
     }
@@ -316,7 +329,81 @@ final class AppModel: ObservableObject {
                                    count: settings.historyTurns ?? 2, since: historyFloor)
     }
 
-    func newTopic() { historyFloor = Date() }
+    /// 把当前对话写入本机历史（只存定稿转写和回答文本，不存截图/音频）。
+    func persistCurrentSession() {
+        guard settings.saveHistory, !RuntimeFlags.isolated else { return }
+        let finalLines = lines.filter { !$0.isPartial }.map {
+            HistoryLine(speaker: $0.speaker, text: $0.text, time: $0.time)
+        }
+        let finalAnswers = answers.filter { !$0.text.isEmpty }.map {
+            HistoryAnswer(title: $0.title, text: $0.text, context: $0.context, created: $0.created)
+        }
+        guard !finalLines.isEmpty || !finalAnswers.isEmpty else { return }
+
+        let existing = history.first { $0.id == currentSessionID }
+        let title = (existing?.title.isEmpty == false) ? existing!.title
+            : HistorySession.makeTitle(lines: finalLines, date: currentCreatedAt)
+        let session = HistorySession(id: currentSessionID, title: title,
+                                     createdAt: existing?.createdAt ?? currentCreatedAt,
+                                     updatedAt: Date(), lines: finalLines, answers: finalAnswers)
+        historyStore.save(session)
+        if let i = history.firstIndex(where: { $0.id == session.id }) { history[i] = session }
+        else { history.insert(session, at: 0) }
+        history.sort { $0.updatedAt > $1.updatedAt }
+        if selectedHistoryID == nil || selectedHistoryID == session.id { selectedHistoryID = session.id }
+    }
+
+    func newTopic() {
+        persistCurrentSession()
+        cancelAsk()
+        lines.removeAll(); answers.removeAll(); detector.reset()
+        historyFloor = Date()
+        currentSessionID = UUID()
+        currentCreatedAt = Date()
+        selectedHistoryID = nil
+        status = "新话题"
+    }
+
+    /// 打开历史记录：先保存当前对话，停止监听，再把历史转写/回答载入主区域。
+    func selectHistory(_ id: UUID) async {
+        guard id != currentSessionID else { return }
+        if isListening { await stop() }
+        cancelAsk()
+        persistCurrentSession()
+        guard let session = history.first(where: { $0.id == id }) else { return }
+        lines = session.lines.enumerated().map {
+            TranscriptLine(speaker: $1.speaker, segment: 1_000_000 + $0, text: $1.text, isPartial: false, time: $1.time)
+        }
+        answers = session.answers.map {
+            AnswerItem(title: $0.title, text: $0.text, context: $0.context, created: $0.created)
+        }
+        currentSessionID = session.id
+        currentCreatedAt = session.createdAt
+        selectedHistoryID = session.id
+        historyFloor = .distantPast
+        detector.reset()
+        status = "已打开历史记录"
+    }
+
+    func deleteHistory(_ id: UUID) {
+        historyStore.delete(id)
+        history.removeAll { $0.id == id }
+        if selectedHistoryID == id { selectedHistoryID = nil }
+        if currentSessionID == id {
+            cancelAsk()
+            lines.removeAll(); answers.removeAll(); detector.reset()
+            currentSessionID = UUID(); currentCreatedAt = Date(); historyFloor = Date()
+        }
+    }
+
+    func clearHistory() {
+        historyStore.clear()
+        history.removeAll()
+        selectedHistoryID = nil
+        cancelAsk()
+        lines.removeAll(); answers.removeAll(); detector.reset()
+        currentSessionID = UUID(); currentCreatedAt = Date(); historyFloor = Date()
+    }
 
     func buildPrompt(_ p: Preset, extra: String?, hasImage: Bool, auto: Bool = false, historyText: String = "") -> Prompt {
         ContextBuilder.build(lines: lines,
@@ -351,7 +438,7 @@ final class AppModel: ObservableObject {
         handle(speaker, SegmentUpdate(id: debugSeg, start: Date(), text: text, isFinal: true, end: Date()))
     }
 
-    func clear() { lines.removeAll(); answers.removeAll(); detector.reset() }
+    func clear() { newTopic() }
 }
 
 // MARK: 全局快捷键（Carbon RegisterEventHotKey，无需辅助功能权限）

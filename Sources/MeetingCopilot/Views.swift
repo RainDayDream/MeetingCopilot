@@ -65,14 +65,19 @@ struct ContentView: View {
     @EnvironmentObject var m: AppModel
     @State private var question = ""
     @State private var showSettings = false
+    @State private var showHistory = true
+    @State private var confirmClearHistory = false
 
     var body: some View {
         VStack(spacing: 0) {
             toolbar
             Divider()
             HSplitView {
-                transcriptPane.frame(minWidth: 300)
-                answerPane.frame(minWidth: 380)
+                if showHistory {
+                    historySidebar.frame(minWidth: 160, idealWidth: 200, maxWidth: 260)
+                }
+                transcriptPane.frame(minWidth: 250)
+                answerPane.frame(minWidth: 290)
             }
             Divider()
             inputBar
@@ -82,6 +87,57 @@ struct ContentView: View {
             if let img = m.previewImage { ImagePreview(image: img, title: "当前会被截取的屏幕") }
         }
         .sheet(isPresented: $showSettings) { SettingsView().environmentObject(m) }
+    }
+
+    private var historySidebar: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("历史记录").font(.headline)
+                Spacer()
+                Button { m.newTopic() } label: { Image(systemName: "plus.bubble") }
+                    .help("新话题：保存当前对话并开始新的对话")
+            }
+            .padding(8)
+            Divider()
+            if m.history.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "clock.arrow.circlepath").font(.title2).foregroundStyle(.secondary)
+                    Text("还没有历史记录").font(.caption).foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                List(selection: Binding(get: { m.selectedHistoryID }, set: { id in
+                    if let id { Task { await m.selectHistory(id) } }
+                })) {
+                    ForEach(m.history) { s in
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(s.title).lineLimit(1)
+                            Text("\(s.updatedAt.formatted(date: .abbreviated, time: .shortened)) · \(s.lines.count) 句")
+                                .font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        .tag(s.id)
+                    }
+                }
+                .listStyle(.sidebar)
+            }
+            Divider()
+            HStack {
+                Button("删除") {
+                    if let id = m.selectedHistoryID { m.deleteHistory(id) }
+                }
+                .disabled(m.selectedHistoryID == nil)
+                Spacer()
+                Button("清空") { confirmClearHistory = true }
+                    .disabled(m.history.isEmpty)
+            }
+            .padding(6)
+        }
+        .confirmationDialog("清空所有历史记录？", isPresented: $confirmClearHistory) {
+            Button("清空", role: .destructive) { m.clearHistory() }
+            Button("取消", role: .cancel) {}
+        } message: {
+            Text("本机保存的所有历史转写和回答都会被删除，无法恢复。")
+        }
     }
 
     private var toolbar: some View {
@@ -95,6 +151,8 @@ struct ContentView: View {
     private var fullToolbar: some View {
         HStack(spacing: 10) {
             startStopButton
+            Button { showHistory.toggle() } label: { Image(systemName: "sidebar.left") }
+                .help("显示/隐藏历史记录")
             statusView
             if m.isListening {
                 LevelBar(title: "对方", level: m.sysLevel, count: m.sysBuffers)
@@ -113,7 +171,7 @@ struct ContentView: View {
             Button { m.exportTranscript() } label: { Image(systemName: "square.and.arrow.up") }
                 .help("导出转写")
             Button { m.clear() } label: { Image(systemName: "trash") }
-                .help("清空转写")
+                .help("清空当前对话并开始新话题（历史记录保留）")
             settingsButton
         }
     }
@@ -126,6 +184,8 @@ struct ContentView: View {
             Spacer(minLength: 4)
             presetPicker.frame(width: 140)
             answerButton
+            Button { showHistory.toggle() } label: { Image(systemName: "sidebar.left") }
+                .help("显示/隐藏历史记录")
             Toggle(isOn: $m.settings.autoAnswer) {
                 Image(systemName: "bolt.fill")
             }
@@ -220,6 +280,9 @@ struct ContentView: View {
                 Text("自动").tag("auto"); Text("中文").tag("zh"); Text("English").tag("en")
             }
             Divider()
+            Button { showHistory.toggle() } label: {
+                Label(showHistory ? "隐藏历史记录" : "显示历史记录", systemImage: "sidebar.left")
+            }
             Button { m.previewScreenshot() } label: {
                 Label("预览屏幕", systemImage: "camera.viewfinder")
             }
@@ -230,7 +293,7 @@ struct ContentView: View {
                 Label("导出转写", systemImage: "square.and.arrow.up")
             }
             Button { m.clear() } label: {
-                Label("清空转写", systemImage: "trash")
+                Label("清空当前对话（历史保留）", systemImage: "trash")
             }
             Divider()
             Toggle("窗口置顶", isOn: Binding(get: { m.settings.alwaysOnTop ?? false },
@@ -327,7 +390,7 @@ struct ContentView: View {
             .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.gray.opacity(0.25)))
             Button("新话题") { m.newTopic() }
-                .help("之后的回答不再参考此前的问答（转写不受影响）")
+                .help("保存当前对话并开始新的话题（历史记录保留在左侧）")
             if m.isAsking {
                 Button("停止") { m.cancelAsk() }
             } else {
@@ -491,6 +554,10 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 toggleRow("同时转写我的麦克风（标记为“我”）", isOn: $m.settings.captureMic)
+                toggleRow("保存历史记录（本地）", isOn: $m.settings.saveHistory)
+                Text("转写和回答保存在本机 Application Support/MeetingCopilot/history；关闭后不再写新记录，已有记录可在左侧历史栏删除。")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                 row("自动回答灵敏度") {
                     Picker("", selection: Binding(get: { m.settings.autoSensitivity ?? 1 },
                                                   set: { m.settings.autoSensitivity = $0 })) {
