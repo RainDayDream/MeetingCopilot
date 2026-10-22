@@ -79,6 +79,7 @@ struct Settings: Codable {
     var meetingBackground: String? = nil // 会议背景：岗位、简历要点、议题等，每次都会带上
     var historyTurns: Int? = nil  // 带入最近几次问答作为上下文；nil = 2，0 = 不带
     var autoAnswer = false
+    var saveHistory = true
     var alwaysOnTop: Bool? = nil  // 默认关闭；旧版本的 floatOnTop 字段被忽略
     var hideFromCapture: Bool? = nil  // 默认关闭；旧字段 hideFromScreenShare 被忽略
     var hotkeyCode: Int? = nil          // 手动回答全局快捷键；nil = 默认 ⌃⌥A
@@ -96,7 +97,7 @@ struct Settings: Codable {
     enum CodingKeys: String, CodingKey {
         case provider, baseURL, model, profiles, locale, asrProvider, asrLanguage, whisperModel, includeScreenshot, captureMic
         case screenshotDisplay, recentChars, maxContextChars, autoSensitivity, meetingBackground, historyTurns
-        case autoAnswer, alwaysOnTop, hideFromCapture, hotkeyCode, hotkeyMods, hotkeyLabel, externalURL
+        case autoAnswer, saveHistory, alwaysOnTop, hideFromCapture, hotkeyCode, hotkeyMods, hotkeyLabel, externalURL
         case systemPrompt, presets, selectedPreset
     }
 
@@ -122,6 +123,7 @@ struct Settings: Codable {
         meetingBackground = opt(.meetingBackground)
         historyTurns = opt(.historyTurns)
         autoAnswer = get(.autoAnswer, autoAnswer)
+        saveHistory = get(.saveHistory, saveHistory)
         alwaysOnTop = opt(.alwaysOnTop)
         hideFromCapture = opt(.hideFromCapture)
         hotkeyCode = opt(.hotkeyCode)
