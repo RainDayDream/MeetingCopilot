@@ -1,6 +1,22 @@
 import AVFoundation
+import AppKit
 import MeetingCopilotCore
 import SwiftUI
+
+extension Notification.Name {
+    static let findInConversation = Notification.Name("MeetingCopilot.findInConversation")
+}
+
+private enum SearchTarget: Hashable {
+    case line(UUID)
+    case answer(UUID)
+}
+
+private struct SearchRow: Identifiable {
+    let target: SearchTarget
+    let count: Int
+    var id: SearchTarget { target }
+}
 
 @main
 struct MeetingCopilotApp: App {
@@ -21,6 +37,14 @@ struct MeetingCopilotApp: App {
             ContentView()
                 .environmentObject(model)
                 .frame(minWidth: 720, minHeight: 500)
+        }
+        .commands {
+            CommandGroup(after: .textEditing) {
+                Button("查找…") {
+                    NotificationCenter.default.post(name: .findInConversation, object: nil)
+                }
+                .keyboardShortcut("f", modifiers: .command)
+            }
         }
     }
 }
@@ -70,11 +94,22 @@ struct ContentView: View {
     @State private var renamingID: UUID?
     @State private var renameText = ""
     @State private var showRename = false
+    @State private var showSearch = false
+    @State private var searchText = ""
+    @State private var currentMatch = 0
+    @State private var scrollTarget: SearchTarget?
+    @FocusState private var searchFocused: Bool
+    @State private var keyMonitor: Any?
 
     var body: some View {
         VStack(spacing: 0) {
             toolbar
-            Divider()
+            if showSearch {
+                searchBar
+                Divider()
+            } else {
+                Divider()
+            }
             HSplitView {
                 if showHistory {
                     historySidebar.frame(minWidth: 160, idealWidth: 200, maxWidth: 260)
@@ -90,6 +125,139 @@ struct ContentView: View {
             if let img = m.previewImage { ImagePreview(image: img, title: "当前会被截取的屏幕") }
         }
         .sheet(isPresented: $showSettings) { SettingsView().environmentObject(m) }
+        .onReceive(NotificationCenter.default.publisher(for: .findInConversation)) { _ in openSearch() }
+        .onAppear {
+            guard keyMonitor == nil else { return }
+            keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+                let command = event.modifierFlags.contains(.command)
+                let key = event.charactersIgnoringModifiers?.lowercased()
+                if command, key == "f" {
+                    openSearch()
+                    return nil
+                }
+                return event
+            }
+        }
+        .onDisappear {
+            if let keyMonitor { NSEvent.removeMonitor(keyMonitor) }
+            keyMonitor = nil
+        }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            TextField("搜索转写和回答", text: $searchText)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+                .onSubmit { moveMatch(1) }
+            if !searchQuery.isEmpty {
+                Text(searchStatus)
+                    .font(.caption)
+                    .foregroundStyle(searchRows.isEmpty ? .orange : .secondary)
+                    .fixedSize()
+                Button { moveMatch(-1) } label: { Image(systemName: "chevron.up") }
+                    .disabled(searchRows.isEmpty)
+                    .help("上一个匹配")
+                Button { moveMatch(1) } label: { Image(systemName: "chevron.down") }
+                    .disabled(searchRows.isEmpty)
+                    .help("下一个匹配（Enter）")
+            }
+            Button("完成") { closeSearch() }
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Color(nsColor: .controlBackgroundColor))
+        .onExitCommand { closeSearch() }
+        .onChange(of: searchText) { _, _ in
+            currentMatch = 0
+            scrollTarget = searchRows.first?.target
+            if !searchQuery.isEmpty { searchFocused = true }
+        }
+    }
+
+    private var searchQuery: String {
+        searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private var searchRows: [SearchRow] {
+        guard !searchQuery.isEmpty else { return [] }
+        var rows: [SearchRow] = []
+        for l in m.lines {
+            let n = occurrenceCount(in: l.text)
+            if n > 0 { rows.append(SearchRow(target: .line(l.id), count: n)) }
+        }
+        for a in m.answers {
+            let n = occurrenceCount(in: a.text)
+            if n > 0 { rows.append(SearchRow(target: .answer(a.id), count: n)) }
+        }
+        return rows
+    }
+
+    private var searchIndex: Int {
+        guard !searchRows.isEmpty else { return 0 }
+        return min(max(currentMatch, 0), searchRows.count - 1)
+    }
+
+    private var currentSearchTarget: SearchTarget? {
+        guard !searchRows.isEmpty else { return nil }
+        return searchRows[searchIndex].target
+    }
+
+    private var searchStatus: String {
+        guard !searchQuery.isEmpty else { return "" }
+        guard !searchRows.isEmpty else { return "无结果" }
+        let total = searchRows.reduce(0) { $0 + $1.count }
+        return "\(searchIndex + 1)/\(searchRows.count) 条 · \(total) 处"
+    }
+
+    private func occurrenceCount(in text: String) -> Int {
+        guard !searchQuery.isEmpty else { return 0 }
+        var count = 0
+        var start = text.startIndex
+        while let r = text.range(of: searchQuery, options: [.caseInsensitive], range: start..<text.endIndex) {
+            count += 1
+            start = r.upperBound
+        }
+        return count
+    }
+
+    private func highlighted(_ text: String, active: Bool) -> AttributedString {
+        guard !searchQuery.isEmpty else { return AttributedString(text) }
+        var out = AttributedString()
+        var start = text.startIndex
+        while let r = text.range(of: searchQuery, options: [.caseInsensitive], range: start..<text.endIndex) {
+            out += AttributedString(text[start..<r.lowerBound])
+            var hit = AttributedString(text[r])
+            hit.backgroundColor = active ? Color.orange.opacity(0.45) : Color.yellow.opacity(0.35)
+            out += hit
+            start = r.upperBound
+        }
+        out += AttributedString(text[start...])
+        return out
+    }
+
+    private func openSearch() {
+        guard !showSettings else { return }
+        showSearch = true
+        scrollTarget = searchRows.first?.target
+        DispatchQueue.main.async { searchFocused = true }
+    }
+
+    private func closeSearch() {
+        showSearch = false
+        searchText = ""
+        currentMatch = 0
+        scrollTarget = nil
+        searchFocused = false
+    }
+
+    private func moveMatch(_ delta: Int) {
+        guard !searchRows.isEmpty else { return }
+        let next = (searchIndex + delta + searchRows.count) % searchRows.count
+        currentMatch = next
+        scrollTarget = searchRows[next].target
     }
 
     private var historySidebar: some View {
@@ -175,6 +343,8 @@ struct ContentView: View {
             startStopButton
             Button { showHistory.toggle() } label: { Image(systemName: "sidebar.left") }
                 .help("显示/隐藏历史记录")
+            Button { openSearch() } label: { Image(systemName: "magnifyingglass") }
+                .help("查找转写和回答（⌘F）")
             statusView
             if m.isListening {
                 LevelBar(title: "对方", level: m.sysLevel, count: m.sysBuffers)
@@ -208,6 +378,8 @@ struct ContentView: View {
             answerButton
             Button { showHistory.toggle() } label: { Image(systemName: "sidebar.left") }
                 .help("显示/隐藏历史记录")
+            Button { openSearch() } label: { Image(systemName: "magnifyingglass") }
+                .help("查找（⌘F）")
             Toggle(isOn: $m.settings.autoAnswer) {
                 Image(systemName: "bolt.fill")
             }
@@ -305,6 +477,9 @@ struct ContentView: View {
             Button { showHistory.toggle() } label: {
                 Label(showHistory ? "隐藏历史记录" : "显示历史记录", systemImage: "sidebar.left")
             }
+            Button { openSearch() } label: {
+                Label("查找…", systemImage: "magnifyingglass")
+            }
             Button { m.previewScreenshot() } label: {
                 Label("预览屏幕", systemImage: "camera.viewfinder")
             }
@@ -338,9 +513,10 @@ struct ContentView: View {
                 LazyVStack(alignment: .leading, spacing: 6) {
                     ForEach(m.lines) { l in
                         (Text(l.speaker + "  ").bold().foregroundColor(l.speaker == "我" ? .blue : .orange)
-                         + Text(l.text).foregroundColor(l.isPartial ? .secondary : .primary))
+                         + Text(highlighted(l.text, active: currentSearchTarget == .line(l.id)))
+                            .foregroundColor(l.isPartial ? .secondary : .primary))
                             .textSelection(.enabled)
-                            .id(l.id)
+                            .id(SearchTarget.line(l.id))
                     }
                     if m.lines.isEmpty {
                         Text("点击“开始监听”后，会议语音会实时出现在这里。").foregroundStyle(.secondary)
@@ -349,46 +525,59 @@ struct ContentView: View {
                 .padding(10).frame(maxWidth: .infinity, alignment: .leading)
             }
             .onChange(of: m.lines.last?.text) {
-                if let id = m.lines.last?.id { proxy.scrollTo(id, anchor: .bottom) }
+                if !showSearch || searchQuery.isEmpty, let id = m.lines.last?.id { proxy.scrollTo(id, anchor: .bottom) }
+            }
+            .onChange(of: scrollTarget) { _, target in
+                guard case .line(let id) = target else { return }
+                withAnimation { proxy.scrollTo(SearchTarget.line(id), anchor: .center) }
             }
         }
     }
 
     private var answerPane: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                if m.isListening, m.sysBuffers == 0 {
-                    Text("尚未收到系统音频。请确认：已授权“屏幕与系统音频录制”并重启过 App；会议里确实有人在说话。")
-                        .foregroundStyle(.orange)
-                }
-                if let e = m.recogError {
-                    Text("⚠️ " + e).foregroundStyle(.orange).textSelection(.enabled)
-                }
-                if let e = m.errorMessage {
-                    Text(e).foregroundStyle(.red).padding(8)
-                        .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
-                }
-                ForEach(m.answers) { a in
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack {
-                            Text(a.title).font(.caption.bold()).foregroundStyle(.secondary)
-                            if a.usedScreenshot { Image(systemName: "photo").font(.caption).foregroundStyle(.secondary) }
-                        }
-                        if let img = a.screenshot {
-                            Image(nsImage: img).resizable().scaledToFit().frame(maxWidth: 260)
-                                .border(Color.gray.opacity(0.4))
-                                .onTapGesture { m.previewImage = img }
-                                .help("本次解读所用的截图，点击放大")
-                        }
-                        Text(markdown(a.text.isEmpty ? "…" : a.text)).textSelection(.enabled)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    if m.isListening, m.sysBuffers == 0 {
+                        Text("尚未收到系统音频。请确认：已授权“屏幕与系统音频录制”并重启过 App；会议里确实有人在说话。")
+                            .foregroundStyle(.orange)
                     }
-                    Divider()
+                    if let e = m.recogError {
+                        Text("⚠️ " + e).foregroundStyle(.orange).textSelection(.enabled)
+                    }
+                    if let e = m.errorMessage {
+                        Text(e).foregroundStyle(.red).padding(8)
+                            .background(Color.red.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+                    }
+                    ForEach(m.answers) { a in
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(a.title).font(.caption.bold()).foregroundStyle(.secondary)
+                                if a.usedScreenshot { Image(systemName: "photo").font(.caption).foregroundStyle(.secondary) }
+                            }
+                            if let img = a.screenshot {
+                                Image(nsImage: img).resizable().scaledToFit().frame(maxWidth: 260)
+                                    .border(Color.gray.opacity(0.4))
+                                    .onTapGesture { m.previewImage = img }
+                                    .help("本次解读所用的截图，点击放大")
+                            }
+                            Text(searchQuery.isEmpty ? markdown(a.text.isEmpty ? "…" : a.text)
+                                 : highlighted(a.text.isEmpty ? "…" : a.text, active: currentSearchTarget == .answer(a.id)))
+                                .textSelection(.enabled)
+                        }
+                        .id(SearchTarget.answer(a.id))
+                        Divider()
+                    }
+                    if m.answers.isEmpty && m.errorMessage == nil {
+                        Text("AI 回答显示在这里。").foregroundStyle(.secondary)
+                    }
                 }
-                if m.answers.isEmpty && m.errorMessage == nil {
-                    Text("AI 回答显示在这里。").foregroundStyle(.secondary)
-                }
+                .padding(10).frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(10).frame(maxWidth: .infinity, alignment: .leading)
+            .onChange(of: scrollTarget) { _, target in
+                guard case .answer(let id) = target else { return }
+                withAnimation { proxy.scrollTo(SearchTarget.answer(id), anchor: .center) }
+            }
         }
     }
 
