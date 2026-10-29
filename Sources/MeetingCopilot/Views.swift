@@ -20,7 +20,6 @@ struct MeetingCopilotApp: App {
         WindowGroup("MeetingCopilot") {
             ContentView()
                 .environmentObject(model)
-                .frame(minWidth: 720, minHeight: 500)
         }
     }
 }
@@ -75,15 +74,16 @@ struct ContentView: View {
         VStack(spacing: 0) {
             toolbar
             Divider()
-            HSplitView {
-                if showHistory {
-                    historySidebar.frame(minWidth: 160, idealWidth: 200, maxWidth: 260)
+            VSplitView {
+                HSplitView {
+                    if showHistory {
+                        historySidebar.frame(minWidth: 0, idealWidth: 200)
+                    }
+                    transcriptPane.frame(minWidth: 0, idealWidth: 400)
+                    answerPane.frame(minWidth: 0, idealWidth: 500)
                 }
-                transcriptPane.frame(minWidth: 250)
-                answerPane.frame(minWidth: 290)
+                inputBar
             }
-            Divider()
-            inputBar
         }
         .background(WindowConfigurator(floating: m.settings.alwaysOnTop ?? false, hidden: m.settings.hideFromCapture ?? false))
         .sheet(isPresented: Binding(get: { m.previewImage != nil }, set: { if !$0 { m.previewImage = nil } })) {
@@ -399,7 +399,7 @@ struct ContentView: View {
                     .font(.body)
                     .scrollContentBackground(.hidden)
                     .padding(4)
-                    .frame(height: 72)
+                    .frame(minHeight: 56, maxHeight: .infinity)
                 if question.isEmpty {
                     Text("补充提问（可选，回车换行；⌘↩ 发送；留空则按预设直接回答）")
                         .foregroundStyle(.secondary)
@@ -408,7 +408,7 @@ struct ContentView: View {
                         .allowsHitTesting(false)
                 }
             }
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
             .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.gray.opacity(0.25)))
             Button("新话题") { m.newTopic() }
@@ -420,6 +420,7 @@ struct ContentView: View {
             }
         }
         .padding(10)
+        .frame(minHeight: 76, idealHeight: 130)
     }
 
     private func send() {
