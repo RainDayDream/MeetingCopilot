@@ -98,6 +98,9 @@ struct ContentView: View {
     @State private var currentMatch = 0
     @State private var scrollTarget: SearchTarget?
     @FocusState private var searchFocused: Bool
+    @FocusState private var questionFocused: Bool
+    @State private var showFullText = false
+    @State private var fullText = ""
     @State private var keyMonitor: Any?
 
     var body: some View {
@@ -125,6 +128,7 @@ struct ContentView: View {
             if let img = m.previewImage { ImagePreview(image: img, title: "当前会被截取的屏幕") }
         }
         .sheet(isPresented: $showSettings) { SettingsView().environmentObject(m) }
+        .sheet(isPresented: $showFullText) { FullTextSheet(text: fullText) }
         .onReceive(NotificationCenter.default.publisher(for: .findInConversation)) { _ in openSearch() }
         .onAppear {
             guard keyMonitor == nil else { return }
@@ -133,6 +137,11 @@ struct ContentView: View {
                 let key = event.charactersIgnoringModifiers?.lowercased()
                 if command, key == "f" {
                     openSearch()
+                    return nil
+                }
+                // 输入框/搜索框/设置/全文弹窗里保留系统原生 ⌘A 全选。
+                if command, key == "a", !questionFocused, !searchFocused, !showSettings, !showFullText, !showRename {
+                    openFullText()
                     return nil
                 }
                 return event
@@ -258,6 +267,40 @@ struct ContentView: View {
         let next = (searchIndex + delta + searchRows.count) % searchRows.count
         currentMatch = next
         scrollTarget = searchRows[next].target
+    }
+
+    private var fullConversationText: String {
+        var parts: [String] = []
+        if !m.lines.isEmpty {
+            parts.append("【转写】")
+            parts.append(contentsOf: m.lines.map { "[\($0.speaker)] \($0.text)" })
+        }
+        if !m.answers.isEmpty {
+            if !parts.isEmpty { parts.append("") }
+            parts.append("【AI 回答】")
+            for a in m.answers {
+                parts.append("## \(a.title)")
+                parts.append(a.text)
+                parts.append("")
+            }
+        }
+        return parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// ⌘A：没有焦点在输入框时，取当前会话全文；同时复制并打开可选中的全文窗口。
+    private func openFullText() {
+        guard !showSettings, !showFullText else { return }
+        let text = fullConversationText
+        guard !text.isEmpty else {
+            m.status = "当前没有可复制的全文"
+            return
+        }
+        fullText = text
+        let pb = NSPasteboard.general
+        pb.clearContents()
+        pb.setString(text, forType: .string)
+        m.status = "全文已复制到剪贴板"
+        showFullText = true
     }
 
     private var historySidebar: some View {
@@ -480,6 +523,9 @@ struct ContentView: View {
             Button { openSearch() } label: {
                 Label("查找…", systemImage: "magnifyingglass")
             }
+            Button { openFullText() } label: {
+                Label("复制全文…", systemImage: "doc.on.doc")
+            }
             Button { m.previewScreenshot() } label: {
                 Label("预览屏幕", systemImage: "camera.viewfinder")
             }
@@ -587,6 +633,7 @@ struct ContentView: View {
                 TextEditor(text: $question)
                     .font(.body)
                     .scrollContentBackground(.hidden)
+                    .focused($questionFocused)
                     .padding(4)
                     .frame(minHeight: 56, maxHeight: .infinity)
                 if question.isEmpty {
@@ -620,6 +667,69 @@ struct ContentView: View {
     private func markdown(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(s)
+    }
+}
+
+/// 只读、可选中；出现时自动全选，便于 ⌘C 复制整段全文。
+private struct FullTextSelectable: NSViewRepresentable {
+    let text: String
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let tv = NSTextView(frame: NSRect(x: 0, y: 0, width: 640, height: 420))
+        tv.isEditable = false
+        tv.isSelectable = true
+        tv.isRichText = false
+        tv.font = .monospacedSystemFont(ofSize: 13, weight: .regular)
+        tv.textContainerInset = NSSize(width: 12, height: 12)
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.autoresizingMask = [.width]
+        tv.textContainer?.widthTracksTextView = true
+        tv.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        tv.string = text
+
+        let scroll = NSScrollView()
+        scroll.documentView = tv
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+
+        DispatchQueue.main.async {
+            tv.window?.makeFirstResponder(tv)
+            tv.selectAll(nil)
+        }
+        return scroll
+    }
+
+    func updateNSView(_ view: NSScrollView, context: Context) {
+        guard let tv = view.documentView as? NSTextView, tv.string != text else { return }
+        tv.string = text
+    }
+}
+
+private struct FullTextSheet: View {
+    let text: String
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 8) {
+                Text("全文").font(.headline)
+                Text("已全选；可直接 ⌘C 复制，或 ⌘V 粘贴")
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("复制") {
+                    let pb = NSPasteboard.general
+                    pb.clearContents()
+                    pb.setString(text, forType: .string)
+                }
+                Button("关闭") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(10)
+            Divider()
+            FullTextSelectable(text: text)
+        }
+        .frame(minWidth: 640, minHeight: 420)
     }
 }
 
