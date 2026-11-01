@@ -1,6 +1,7 @@
 import AVFoundation
 import AppKit
 import MeetingCopilotCore
+import SwiftMath
 import SwiftUI
 
 extension Notification.Name {
@@ -626,9 +627,12 @@ struct ContentView: View {
                                     .onTapGesture { m.previewImage = img }
                                     .help("本次解读所用的截图，点击放大")
                             }
-                            Text(searchQuery.isEmpty ? markdown(a.text.isEmpty ? "…" : a.text)
-                                 : highlighted(a.text.isEmpty ? "…" : a.text, active: currentSearchTarget == .answer(a.id)))
-                                .textSelection(.enabled)
+                            if searchQuery.isEmpty {
+                                MarkdownView(text: a.text.isEmpty ? "…" : a.text)
+                            } else {
+                                Text(highlighted(a.text.isEmpty ? "…" : a.text, active: currentSearchTarget == .answer(a.id)))
+                                    .textSelection(.enabled)
+                            }
                         }
                         .id(SearchTarget.answer(a.id))
                         Divider()
@@ -683,9 +687,359 @@ struct ContentView: View {
         question = ""
     }
 
-    private func markdown(_ s: String) -> AttributedString {
+}
+
+/// AI 回答的 Markdown 块级渲染：标题、列表、代码块、引用、分隔线和行内格式。
+private struct MarkdownView: View {
+    let text: String
+
+    private enum Block {
+        case heading(Int, String)
+        case paragraph(String)
+        case bullet(String)
+        case ordered(String, String)
+        case quote(String)
+        case code(String)
+        case math(String)
+        case rule
+        case spacer
+    }
+
+    private var blocks: [Block] { Self.parse(text) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                blockView(block)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: Block) -> some View {
+        switch block {
+        case .heading(let level, let text):
+            InlineMarkdownText(text: text)
+                .font(headingFont(level))
+                .fixedSize(horizontal: false, vertical: true)
+        case .paragraph(let text):
+            InlineMarkdownText(text: text)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        case .bullet(let text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("•").foregroundStyle(.secondary)
+                InlineMarkdownText(text: text)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .ordered(let marker, let text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(marker).foregroundStyle(.secondary).monospacedDigit()
+                InlineMarkdownText(text: text)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .quote(let text):
+            HStack(alignment: .top, spacing: 8) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.secondary.opacity(0.35))
+                    .frame(width: 3)
+                InlineMarkdownText(text: text)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        case .code(let code):
+            Text(code)
+                .font(.system(size: 12, design: .monospaced))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
+                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.gray.opacity(0.2)))
+        case .math(let latex):
+            MathView(latex: latex)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.vertical, 2)
+        case .rule:
+            Divider()
+        case .spacer:
+            Color.clear.frame(height: 3)
+        }
+    }
+
+    private func headingFont(_ level: Int) -> Font {
+        switch level {
+        case 1: return .title2.bold()
+        case 2: return .title3.bold()
+        case 3: return .headline
+        default: return .subheadline.bold()
+        }
+    }
+
+    private static func inline(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(s)
+    }
+
+    private static func parse(_ text: String) -> [Block] {
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+        var out: [Block] = []
+        var i = 0
+        while i < lines.count {
+            let raw = lines[i]
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { out.append(.spacer); i += 1; continue }
+
+            if let math = blockMath(lines, &i) {
+                out.append(.math(math)); continue
+            }
+
+            if trimmed.hasPrefix("```") {
+                var code: [String] = []
+                i += 1
+                while i < lines.count {
+                    let l = lines[i]
+                    if l.trimmingCharacters(in: .whitespaces).hasPrefix("```") { i += 1; break }
+                    code.append(l); i += 1
+                }
+                out.append(.code(code.joined(separator: "\n")))
+                continue
+            }
+
+            if let h = heading(trimmed) {
+                out.append(.heading(h.0, h.1)); i += 1; continue
+            }
+            if trimmed == "---" || trimmed == "***" || trimmed == "___" {
+                out.append(.rule); i += 1; continue
+            }
+            if trimmed.hasPrefix(">") {
+                out.append(.quote(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)))
+                i += 1; continue
+            }
+            if let content = bulletContent(trimmed) {
+                out.append(.bullet(content)); i += 1; continue
+            }
+            if let item = orderedItem(trimmed) {
+                out.append(.ordered(item.0, item.1)); i += 1; continue
+            }
+            out.append(.paragraph(trimmed)); i += 1
+        }
+        return out
+    }
+
+    private static func blockMath(_ lines: [String], _ i: inout Int) -> String? {
+        let first = lines[i].trimmingCharacters(in: .whitespaces)
+        if first.hasPrefix("$$") {
+            if first.hasSuffix("$$"), first.count > 4 {
+                i += 1
+                return String(first.dropFirst(2).dropLast(2)).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            var body: [String] = []
+            i += 1
+            while i < lines.count {
+                let line = lines[i]
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasSuffix("$$") {
+                    let prefix = String(trimmed.dropLast(2)).trimmingCharacters(in: .whitespaces)
+                    if !prefix.isEmpty { body.append(prefix) }
+                    i += 1
+                    return body.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                body.append(line); i += 1
+            }
+            return body.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if first.hasPrefix("\\[") {
+            if let close = first.range(of: "\\]") {
+                let start = first.index(first.startIndex, offsetBy: 2)
+                i += 1
+                return String(first[start..<close.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            var body: [String] = []
+            i += 1
+            while i < lines.count {
+                let line = lines[i]
+                if let close = line.range(of: "\\]") {
+                    let prefix = String(line[..<close.lowerBound]).trimmingCharacters(in: .whitespaces)
+                    if !prefix.isEmpty { body.append(prefix) }
+                    i += 1
+                    return body.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+                body.append(line); i += 1
+            }
+            return body.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return nil
+    }
+
+    private static func heading(_ s: String) -> (Int, String)? {
+        let hashes = s.prefix(while: { $0 == "#" }).count
+        guard (1...6).contains(hashes), s.count > hashes else { return nil }
+        let rest = s.dropFirst(hashes)
+        guard rest.first == " " else { return nil }
+        let title = rest.dropFirst().trimmingCharacters(in: .whitespaces)
+        return title.isEmpty ? nil : (hashes, title)
+    }
+
+    private static func bulletContent(_ s: String) -> String? {
+        for marker in ["- ", "* ", "+ "] where s.hasPrefix(marker) {
+            return String(s.dropFirst(marker.count))
+        }
+        return nil
+    }
+
+    private static func orderedItem(_ s: String) -> (String, String)? {
+        guard let r = s.range(of: #"^\d+[.)]\s+"#, options: .regularExpression) else { return nil }
+        let marker = String(s[s.startIndex..<r.upperBound]).trimmingCharacters(in: .whitespaces)
+        let content = String(s[r.upperBound...])
+        return (marker, content)
+    }
+}
+
+/// 行内 Markdown + LaTeX：文本用 AttributedString，公式用 SwiftMath。
+private struct InlineMarkdownText: View {
+    let text: String
+    @Environment(\.colorScheme) private var colorScheme
+
+    private enum Piece {
+        case text(String)
+        case math(String)
+    }
+
+    var body: some View {
+        Self.render(text, colorScheme: colorScheme)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private static func render(_ s: String, colorScheme: ColorScheme) -> Text {
+        var out = Text("")
+        for piece in parse(s) {
+            switch piece {
+            case .text(let plain):
+                out = out + Text(inline(plain))
+            case .math(let latex):
+                if let image = mathImage(latex, colorScheme: colorScheme) {
+                    out = out + Text(Image(nsImage: image))
+                } else {
+                    out = out + Text("$\(latex)$")
+                }
+            }
+        }
+        return out
+    }
+
+    private static let imageCache = NSCache<NSString, NSImage>()
+
+    /// 行内公式画成透明图片，嵌进 Text；这样正文会按正常段落换行。
+    private static func mathImage(_ latex: String, colorScheme: ColorScheme) -> NSImage? {
+        let key = "\(latex)|\(colorScheme == .dark ? "dark" : "light")" as NSString
+        if let cached = imageCache.object(forKey: key) { return cached }
+
+        let label = MTMathUILabel()
+        label.latex = latex
+        label.font = MTFontManager().latinModernFont(withSize: 15)
+        label.textColor = colorScheme == .dark ? .white : .black
+        label.labelMode = .text
+        label.textAlignment = .left
+        label.contentInsets = NSEdgeInsets(top: 2, left: 4, bottom: 2, right: 4)
+        let size = label.fittingSize
+        guard size.width > 0, size.height > 0 else { return nil }
+
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let width = max(1, Int(ceil(size.width * scale)))
+        let height = max(1, Int(ceil(size.height * scale)))
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        rep.size = size
+        label.frame = NSRect(origin: .zero, size: size)
+        label.layoutSubtreeIfNeeded()
+        label.cacheDisplay(in: label.bounds, to: rep)
+
+        let image = NSImage(size: size)
+        image.addRepresentation(rep)
+        imageCache.setObject(image, forKey: key)
+        return image
+    }
+
+    private static func inline(_ s: String) -> AttributedString {
+        (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(s)
+    }
+
+    private static func parse(_ s: String) -> [Piece] {
+        var out: [Piece] = []
+        var index = s.startIndex
+        var textStart = index
+        func flush(_ end: String.Index) {
+            guard textStart < end else { return }
+            out.append(.text(String(s[textStart..<end])))
+        }
+        while index < s.endIndex {
+            if s[index] == "$" {
+                let after = s.index(after: index)
+                if after < s.endIndex, s[after] != "$",
+                   let close = s[after...].firstIndex(of: "$") {
+                    let formula = String(s[after..<close])
+                    if !formula.isEmpty {
+                        flush(index)
+                        out.append(.math(formula))
+                        index = s.index(after: close)
+                        textStart = index
+                        continue
+                    }
+                }
+            }
+            if s[index] == "\\" {
+                let after = s.index(after: index)
+                if after < s.endIndex, s[after] == "(", let close = s.range(of: "\\)", range: s.index(after: after)..<s.endIndex) {
+                    let formula = String(s[s.index(after: after)..<close.lowerBound])
+                    if !formula.isEmpty {
+                        flush(index)
+                        out.append(.math(formula))
+                        index = close.upperBound
+                        textStart = index
+                        continue
+                    }
+                }
+            }
+            index = s.index(after: index)
+        }
+        flush(s.endIndex)
+        return out
+    }
+}
+
+/// SwiftMath 的 LaTeX 渲染；display=true 用于独立公式块。
+private struct MathView: NSViewRepresentable {
+    let latex: String
+    var display: Bool = true
+    var fontSize: CGFloat = 16
+
+    func makeNSView(context: Context) -> MTMathUILabel {
+        let view = MTMathUILabel()
+        view.displayErrorInline = true
+        view.setContentHuggingPriority(.required, for: .vertical)
+        view.setContentCompressionResistancePriority(.required, for: .vertical)
+        return view
+    }
+
+    func updateNSView(_ view: MTMathUILabel, context: Context) {
+        view.latex = latex
+        view.font = MTFontManager().latinModernFont(withSize: fontSize)
+        view.textColor = NSColor.labelColor
+        view.contentInsets = NSEdgeInsets(top: 2, left: 8, bottom: 2, right: 4)
+        view.labelMode = display ? .display : .text
+        view.textAlignment = .left
+        view.needsLayout = true
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: MTMathUILabel, context: Context) -> CGSize? {
+        let size = nsView.fittingSize
+        let width = proposal.width ?? size.width
+        return CGSize(width: min(size.width, width), height: size.height)
     }
 }
 
