@@ -626,9 +626,12 @@ struct ContentView: View {
                                     .onTapGesture { m.previewImage = img }
                                     .help("本次解读所用的截图，点击放大")
                             }
-                            Text(searchQuery.isEmpty ? markdown(a.text.isEmpty ? "…" : a.text)
-                                 : highlighted(a.text.isEmpty ? "…" : a.text, active: currentSearchTarget == .answer(a.id)))
-                                .textSelection(.enabled)
+                            if searchQuery.isEmpty {
+                                MarkdownView(text: a.text.isEmpty ? "…" : a.text)
+                            } else {
+                                Text(highlighted(a.text.isEmpty ? "…" : a.text, active: currentSearchTarget == .answer(a.id)))
+                                    .textSelection(.enabled)
+                            }
                         }
                         .id(SearchTarget.answer(a.id))
                         Divider()
@@ -683,9 +686,164 @@ struct ContentView: View {
         question = ""
     }
 
-    private func markdown(_ s: String) -> AttributedString {
+}
+
+/// AI 回答的 Markdown 块级渲染：标题、列表、代码块、引用、分隔线和行内格式。
+private struct MarkdownView: View {
+    let text: String
+
+    private enum Block {
+        case heading(Int, String)
+        case paragraph(String)
+        case bullet(String)
+        case ordered(String, String)
+        case quote(String)
+        case code(String)
+        case rule
+        case spacer
+    }
+
+    private var blocks: [Block] { Self.parse(text) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
+                blockView(block)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: Block) -> some View {
+        switch block {
+        case .heading(let level, let text):
+            Text(Self.inline(text))
+                .font(headingFont(level))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        case .paragraph(let text):
+            Text(Self.inline(text))
+                .lineSpacing(3)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        case .bullet(let text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text("•").foregroundStyle(.secondary)
+                Text(Self.inline(text))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        case .ordered(let marker, let text):
+            HStack(alignment: .firstTextBaseline, spacing: 6) {
+                Text(marker).foregroundStyle(.secondary).monospacedDigit()
+                Text(Self.inline(text))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        case .quote(let text):
+            HStack(alignment: .top, spacing: 8) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.secondary.opacity(0.35))
+                    .frame(width: 3)
+                Text(Self.inline(text))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+            }
+        case .code(let code):
+            Text(code)
+                .font(.system(size: 12, design: .monospaced))
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(8)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 5))
+                .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color.gray.opacity(0.2)))
+        case .rule:
+            Divider()
+        case .spacer:
+            Color.clear.frame(height: 3)
+        }
+    }
+
+    private func headingFont(_ level: Int) -> Font {
+        switch level {
+        case 1: return .title2.bold()
+        case 2: return .title3.bold()
+        case 3: return .headline
+        default: return .subheadline.bold()
+        }
+    }
+
+    private static func inline(_ s: String) -> AttributedString {
         (try? AttributedString(markdown: s, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
             ?? AttributedString(s)
+    }
+
+    private static func parse(_ text: String) -> [Block] {
+        let lines = text.replacingOccurrences(of: "\r\n", with: "\n").components(separatedBy: "\n")
+        var out: [Block] = []
+        var i = 0
+        while i < lines.count {
+            let raw = lines[i]
+            let trimmed = raw.trimmingCharacters(in: .whitespaces)
+            if trimmed.isEmpty { out.append(.spacer); i += 1; continue }
+
+            if trimmed.hasPrefix("```") {
+                var code: [String] = []
+                i += 1
+                while i < lines.count {
+                    let l = lines[i]
+                    if l.trimmingCharacters(in: .whitespaces).hasPrefix("```") { i += 1; break }
+                    code.append(l); i += 1
+                }
+                out.append(.code(code.joined(separator: "\n")))
+                continue
+            }
+
+            if let h = heading(trimmed) {
+                out.append(.heading(h.0, h.1)); i += 1; continue
+            }
+            if trimmed == "---" || trimmed == "***" || trimmed == "___" {
+                out.append(.rule); i += 1; continue
+            }
+            if trimmed.hasPrefix(">") {
+                out.append(.quote(String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)))
+                i += 1; continue
+            }
+            if let content = bulletContent(trimmed) {
+                out.append(.bullet(content)); i += 1; continue
+            }
+            if let item = orderedItem(trimmed) {
+                out.append(.ordered(item.0, item.1)); i += 1; continue
+            }
+            out.append(.paragraph(trimmed)); i += 1
+        }
+        return out
+    }
+
+    private static func heading(_ s: String) -> (Int, String)? {
+        let hashes = s.prefix(while: { $0 == "#" }).count
+        guard (1...6).contains(hashes), s.count > hashes else { return nil }
+        let rest = s.dropFirst(hashes)
+        guard rest.first == " " else { return nil }
+        let title = rest.dropFirst().trimmingCharacters(in: .whitespaces)
+        return title.isEmpty ? nil : (hashes, title)
+    }
+
+    private static func bulletContent(_ s: String) -> String? {
+        for marker in ["- ", "* ", "+ "] where s.hasPrefix(marker) {
+            return String(s.dropFirst(marker.count))
+        }
+        return nil
+    }
+
+    private static func orderedItem(_ s: String) -> (String, String)? {
+        guard let r = s.range(of: #"^\d+[.)]\s+"#, options: .regularExpression) else { return nil }
+        let marker = String(s[s.startIndex..<r.upperBound]).trimmingCharacters(in: .whitespaces)
+        let content = String(s[r.upperBound...])
+        return (marker, content)
     }
 }
 
