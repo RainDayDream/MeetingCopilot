@@ -87,6 +87,66 @@ enum SelfTest {
     }
 }
 
+/// 对所有 App 窗口（包括设置 sheet、弹窗、预览）统一设置 sharingType。
+/// 仅在主窗口上的 WindowConfigurator 不够：设置窗口是独立 NSWindow，点击后
+/// SwiftUI 也可能重新激活窗口，所以需要在窗口事件和定时器里持续兜底。
+final class WindowCaptureHider {
+    static let shared = WindowCaptureHider()
+    private var enabled = false
+    private var observers: [NSObjectProtocol] = []
+    private var timer: Timer?
+
+    private init() {
+        let center = NotificationCenter.default
+        let names: [Notification.Name] = [
+            NSWindow.didBecomeKeyNotification,
+            NSWindow.didBecomeMainNotification,
+            NSApplication.didBecomeActiveNotification,
+        ]
+        for name in names {
+            observers.append(center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                self?.scheduleApply()
+            })
+        }
+    }
+
+    deinit {
+        observers.forEach(NotificationCenter.default.removeObserver)
+        timer?.invalidate()
+    }
+
+    func setEnabled(_ on: Bool) {
+        guard enabled != on else { scheduleApply(); return }
+        enabled = on
+        if on { startTimer() } else { timer?.invalidate(); timer = nil; restoreAll() }
+        scheduleApply()
+    }
+
+    private func startTimer() {
+        timer?.invalidate()
+        let t = Timer(timeInterval: 0.2, repeats: true) { [weak self] _ in self?.applyNow() }
+        RunLoop.main.add(t, forMode: .common)
+        timer = t
+    }
+
+    private func scheduleApply() {
+        DispatchQueue.main.async { [weak self] in self?.applyNow() }
+    }
+
+    private func applyNow() {
+        guard enabled else { return }
+        for w in NSApp.windows where w.isVisible {
+            w.sharingType = .none
+        }
+    }
+
+    private func restoreAll() {
+        for w in NSApp.windows {
+            w.sharingType = .readOnly
+        }
+    }
+}
+
 struct WindowConfigurator: NSViewRepresentable {
     var floating: Bool
     var hidden: Bool
@@ -99,6 +159,7 @@ struct WindowConfigurator: NSViewRepresentable {
     private func apply(_ w: NSWindow?) {
         w?.level = floating ? .floating : .normal
         w?.sharingType = hidden ? .none : .readOnly
+        WindowCaptureHider.shared.setEnabled(hidden)
     }
 }
 
