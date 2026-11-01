@@ -900,6 +900,7 @@ private struct MarkdownView: View {
 /// 行内 Markdown + LaTeX：文本用 AttributedString，公式用 SwiftMath。
 private struct InlineMarkdownText: View {
     let text: String
+    @Environment(\.colorScheme) private var colorScheme
 
     private enum Piece {
         case text(String)
@@ -907,22 +908,60 @@ private struct InlineMarkdownText: View {
     }
 
     var body: some View {
-        let pieces = Self.parse(text)
-        if pieces.count == 1, case .text(let plain) = pieces[0] {
-            Text(Self.inline(plain)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
-        } else {
-            HStack(alignment: .firstTextBaseline, spacing: 3) {
-                ForEach(Array(pieces.enumerated()), id: \.offset) { _, piece in
-                    switch piece {
-                    case .text(let plain):
-                        Text(Self.inline(plain)).textSelection(.enabled)
-                    case .math(let latex):
-                        MathView(latex: latex, display: false, fontSize: 15)
-                    }
+        Self.render(text, colorScheme: colorScheme)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private static func render(_ s: String, colorScheme: ColorScheme) -> Text {
+        var out = Text("")
+        for piece in parse(s) {
+            switch piece {
+            case .text(let plain):
+                out = out + Text(inline(plain))
+            case .math(let latex):
+                if let image = mathImage(latex, colorScheme: colorScheme) {
+                    out = out + Text(Image(nsImage: image))
+                } else {
+                    out = out + Text("$\(latex)$")
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
+        return out
+    }
+
+    private static let imageCache = NSCache<NSString, NSImage>()
+
+    /// 行内公式画成透明图片，嵌进 Text；这样正文会按正常段落换行。
+    private static func mathImage(_ latex: String, colorScheme: ColorScheme) -> NSImage? {
+        let key = "\(latex)|\(colorScheme == .dark ? "dark" : "light")" as NSString
+        if let cached = imageCache.object(forKey: key) { return cached }
+
+        let label = MTMathUILabel()
+        label.latex = latex
+        label.font = MTFontManager().latinModernFont(withSize: 15)
+        label.textColor = colorScheme == .dark ? .white : .black
+        label.labelMode = .text
+        label.textAlignment = .left
+        label.contentInsets = NSEdgeInsets(top: 2, left: 4, bottom: 2, right: 4)
+        let size = label.fittingSize
+        guard size.width > 0, size.height > 0 else { return nil }
+
+        let scale = NSScreen.main?.backingScaleFactor ?? 2
+        let width = max(1, Int(ceil(size.width * scale)))
+        let height = max(1, Int(ceil(size.height * scale)))
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: width, pixelsHigh: height,
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        rep.size = size
+        label.frame = NSRect(origin: .zero, size: size)
+        label.layoutSubtreeIfNeeded()
+        label.cacheDisplay(in: label.bounds, to: rep)
+
+        let image = NSImage(size: size)
+        image.addRepresentation(rep)
+        imageCache.setObject(image, forKey: key)
+        return image
     }
 
     private static func inline(_ s: String) -> AttributedString {
@@ -943,7 +982,7 @@ private struct InlineMarkdownText: View {
                 let after = s.index(after: index)
                 if after < s.endIndex, s[after] != "$",
                    let close = s[after...].firstIndex(of: "$") {
-                    let formula = String(s[s.index(after: after)..<close])
+                    let formula = String(s[after..<close])
                     if !formula.isEmpty {
                         flush(index)
                         out.append(.math(formula))
@@ -991,6 +1030,7 @@ private struct MathView: NSViewRepresentable {
         view.latex = latex
         view.font = MTFontManager().latinModernFont(withSize: fontSize)
         view.textColor = NSColor.labelColor
+        view.contentInsets = NSEdgeInsets(top: 2, left: 8, bottom: 2, right: 4)
         view.labelMode = display ? .display : .text
         view.textAlignment = .left
         view.needsLayout = true
